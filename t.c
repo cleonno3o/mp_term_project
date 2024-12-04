@@ -10,6 +10,7 @@ unsigned int External_PIN=0; /* External_PIN:SW External input Assignment */
 int segment[] = {12, 2, 3, 4, 5, 6, 7};
 int com[] = {8, 9, 10, 11};
 int inter[] = {11, 12, 13, 16, 17};
+int a;
 void PORT_init (void)
 {
 	PCC->PCCn[PCC_PORTD_INDEX] = PCC_PCCn_CGC_MASK;
