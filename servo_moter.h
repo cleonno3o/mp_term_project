@@ -1,12 +1,12 @@
-#include "device_registers.h"
-#include "clocks_and_modes.h"
+// #include "device_registers.h"
+// #include "clocks_and_modes.h"
 
-// 서보 모터의 듀티 사이클 계산 함수
-void set_servo_angle(int angle) {
-    // 각도에 따른 듀티 사이클 값 계산 (0도 = 2000, 90도 = 4000)
-    int pwm_value = 2000 + (angle * 2000) / 90;
-    FTM0->CONTROLS[1].CnV = pwm_value;  // FTM0 채널 1에 듀티 사이클 설정
-}
+// // 서보 모터의 듀티 사이클 계산 함수
+// void set_servo_angle(int angle) {
+//     // 각도에 따른 듀티 사이클 값 계산 (0도 = 2000, 90도 = 4000)
+//     int pwm_value = 2000 + (angle * 2000) / 90;
+//     FTM0->CONTROLS[1].CnV = pwm_value;  // FTM0 채널 1에 듀티 사이클 설정
+// }
 
 // // FTM0 PWM 초기화 함수
 // void FTM0_PWM_Init(void) {
