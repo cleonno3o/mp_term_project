@@ -385,14 +385,14 @@
           <GroupName>Source Group 1</GroupName>
           <Files>
             <File>
-              <FileName>t.c</FileName>
+              <FileName>main.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\t.c</FilePath>
+              <FilePath>.\main.c</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>New Group</GroupName>
+          <GroupName>headers</GroupName>
           <Files>
             <File>
               <FileName>clocks_and_modes.c</FileName>
@@ -403,6 +403,31 @@
               <FileName>clocks_and_modes.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\clocks_and_modes.h</FilePath>
+            </File>
+            <File>
+              <FileName>buzzer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\buzzer.h</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\lcd.h</FilePath>
+            </File>
+            <File>
+              <FileName>segment.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\segment.h</FilePath>
+            </File>
+            <File>
+              <FileName>servo_moter.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\servo_moter.h</FilePath>
+            </File>
+            <File>
+              <FileName>step_moter.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\step_moter.h</FilePath>
             </File>
           </Files>
         </Group>

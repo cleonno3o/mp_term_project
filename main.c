@@ -7,8 +7,18 @@
 #include "lcd.h"
 #include "servo_moter.h"
 
+enum STATE
+{
+    IDLE = 0,
+    CAR,
+    SHIP,
+    EMERGENCY
+};
+
+int state = IDLE;
+
 void WDOG_disable();
-void LPIT0_init();
+void LPIT0_init(uint32_t delay);
 void delay_ms(volatile int ms);
 void init_sys();
 
@@ -20,10 +30,29 @@ int main(void)
 		&segment,
 		PORTC,
 		PTC,
-		PCC_PORTC_INDEX,
-		{1, 2, 3, 4, 5, 6, 7},
-		{8, 9, 10, 11});
+		PCC_PORTC_INDEX);
 	segment.delay_ms = delay_ms;
+    switch (state)
+	{
+	case IDLE:
+		while (1) 
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				set_num(&segment, i, i);
+			}
+		}
+		break;
+	case CAR:
+		break;
+
+	case SHIP:
+		break;
+	case EMERGENCY:
+		break;
+	default:
+		break;
+	}
 }
 
 void init_sys() 
@@ -78,6 +107,5 @@ void delay_ms(volatile int ms)
 	while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK))
 	{
 	}								  /* Wait for LPIT0 CH0 Flag */
-	lpit0_ch0_flag_counter++;		  /* Increment LPIT0 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
 }
