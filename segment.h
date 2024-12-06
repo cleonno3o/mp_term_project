@@ -6,7 +6,9 @@ typedef struct {
     unsigned int fnd_data[10] = {0x7E, 0x0C, 0xB6, 0x9E, 0xCC, 0xDA, 0xFA, 0x4E, 0xFE, 0xDE}; // 0~9 number
     unsigned int fnd_sel[4] = {0x0100, 0x0200, 0x0400, 0x0800};
 
-    void (*delay_ms)(int ms);
+    void (*delay_ms)(volatile int ms);
+    void (*segemnt_init)(Segment *segment, PORT_Type *port_type, GPIO_Type *ptn, int pcc_index, int segment_port[], int com_port[]);
+    void (*set_num)(Segment *segment, int num, int pos);
 } Segment;
 
 void segment_init(Segment *segment, PORT_Type *port_type, GPIO_Type *ptn, int pcc_index, int segment_port[], int com_port[]) {

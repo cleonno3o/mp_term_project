@@ -7,9 +7,6 @@
 #include "lcd.h"
 #include "servo_moter.h"
 
-int segment[] = {12, 2, 3, 4, 5, 6, 7};
-int com[] = {8, 9, 10, 11};
-
 void WDOG_disable();
 void LPIT0_init();
 void delay_ms(volatile int ms);
@@ -18,6 +15,15 @@ void init_sys();
 int main(void) 
 {
 	init_sys();
+	Segment segment;
+	segment_init(
+		&segment,
+		PORTC,
+		PTC,
+		PCC_PORTC_INDEX,
+		{1, 2, 3, 4, 5, 6, 7},
+		{8, 9, 10, 11});
+	segment.delay_ms = delay_ms;
 }
 
 void init_sys() 
