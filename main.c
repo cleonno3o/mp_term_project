@@ -21,6 +21,7 @@ void WDOG_disable();
 void LPIT0_init(uint32_t delay);
 void delay_ms(volatile int ms);
 void init_sys();
+void _port_init();
 
 int main(void) 
 {
@@ -43,9 +44,6 @@ int main(void)
 			}
 		}
 		break;
-	case CAR:
-		break;
-
 	case SHIP:
 		break;
 	case EMERGENCY:
@@ -61,6 +59,12 @@ void init_sys()
 	SOSC_init_8MHz();	   /* Initialize system oscilator for 8 MHz xtal */
 	SPLL_init_160MHz();	   /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
 	NormalRUNmode_80MHz(); /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
+	_port_init();
+}
+
+void _port_init()
+{
+
 }
 
 void WDOG_disable(void) 
