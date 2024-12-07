@@ -45,3 +45,19 @@ void led_set_ship_red(bool on)
     else
         LED_PTN->PCOR = 1 << LED_SHIP_RED;
 }
+
+void led_car_mode()
+{
+    led_set_car_green(true);
+    led_set_car_red(false);
+    led_set_ship_green(false);
+    led_set_ship_red(true);
+}
+
+void led_ship_mode()
+{
+    led_set_car_green(false);
+    led_set_car_red(true);
+    led_set_ship_green(true);
+    led_set_ship_red(false);
+}

@@ -16,8 +16,10 @@ enum STATE
     SHIP,
     EMERGENCY
 };
-
+// system
 int state = INIT;
+bool isRegisterd = false;
+const int SHIP_TIMER = 30;
 
 void WDOG_disable();
 void LPIT0_init(uint32_t delay);
@@ -25,6 +27,8 @@ void delay_ms(volatile int ms);
 void init_sys();
 void _port_init();
 
+bool is_ship_waiting();
+bool check_ship();
 int main(void) 
 {
 	init_sys();
@@ -44,22 +48,45 @@ int main(void)
 		switch (state)
 		{
 			case IDLE:
-				while (1) 
+				led_car_mode();
+				if (is_ship_waiting())
 				{
-					for (int i = 0; i < 4; i++)
+					if (check_ship())
 					{
-						set_num(&segment, i, i);
+						state = SHIP;
 					}
+					else
+					{
+						buzzer_set(true);
+					}
+				}
+				else
+				{
+					buzzer_set(false);
 				}
 				break;
 			case SHIP:
+				led_ship_mode();
+				// 타이머 시작
+				// 만약 0이면 IDLE로 복귀
 				break;
 			case EMERGENCY:
+				// 
 				break;
 			default:
 				break;
 		}
 	}
+}
+
+bool is_ship_waiting()
+{
+	return true;
+}
+
+bool check_ship()
+{
+	return false;
 }
 
 void init_sys() 
@@ -102,9 +129,8 @@ void _port_init()
 	/* PORTE */
 	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
 	// 부저
-	PORTE->PCR[1] = PORT_PCR_MUX(1);
+	PORTE->PCR[BUZZER] = PORT_PCR_MUX(1);
 	// LED
-	// 2: system | 3,4: car | 5, 6: ship
 	PORTE->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
 	PORTE->PCR[LED_CAR_GREEN] = PORT_PCR_MUX(1);
 	PORTE->PCR[LED_CAR_RED] = PORT_PCR_MUX(1);
@@ -152,9 +178,9 @@ void LPIT0_init(uint32_t delay)
 
 void delay_ms(volatile int ms)
 {
+	LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
 	LPIT0_init(ms); /* Initialize PIT0 for 1 second timeout  */
 	while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK))
 	{
 	}								  /* Wait for LPIT0 CH0 Flag */
-	LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
 }
