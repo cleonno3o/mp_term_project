@@ -14,13 +14,13 @@ void delay_100ns(uint32_t ns)
 
     timeout = ns * 4;
 
-    LPIT0->TMR[0].TVAL = timeout;
-    LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
+    LPIT0->TMR[1].TVAL = timeout;
+    LPIT0->TMR[1].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
 
-    while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK))
+    while (0 == (LPIT0->MSR & LPIT_MSR_TIF1_MASK))
     {
     }                                 /* Wait for LPIT0 CH0 Flag */
-    LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
+    LPIT0->MSR |= LPIT_MSR_TIF1_MASK; /* Clear LPIT0 timer flag 0 */
 }
 
 void lcdEN(void)
