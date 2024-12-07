@@ -11,15 +11,19 @@
 enum STATE
 {
     INIT = 0,
-	IDLE,
+	CAR,
     CAR,
     SHIP,
     EMERGENCY
 };
 // system
+//// constant
+const int SHIP_TIMER_TH = 30;
+
+//// value
 int state = INIT;
 bool isRegisterd = false;
-const int SHIP_TIMER = 30;
+int ship_timer;
 
 void WDOG_disable();
 void LPIT0_init(uint32_t delay);
@@ -27,8 +31,14 @@ void delay_ms(volatile int ms);
 void init_sys();
 void _port_init();
 
+// CAR 상태 사용 함수
 bool is_ship_waiting();
 bool check_ship();
+void set_ship_mode();
+
+// SHIP 상태 사용 함수
+void set_car_mode();
+
 int main(void) 
 {
 	init_sys();
@@ -41,19 +51,18 @@ int main(void)
 	segment.delay_ms = delay_ms;
 
 	led_set_system_green(true);
-	state = IDLE;
+	set_car_mode();
 
 	while (1)
 	{
 		switch (state)
 		{
-			case IDLE:
-				led_car_mode();
+			case CAR:
 				if (is_ship_waiting())
 				{
 					if (check_ship())
 					{
-						state = SHIP;
+						set_ship_mode();
 					}
 					else
 					{
@@ -66,9 +75,10 @@ int main(void)
 				}
 				break;
 			case SHIP:
-				led_ship_mode();
-				// 타이머 시작
-				// 만약 0이면 IDLE로 복귀
+				if (ship_timer == 0)
+				{
+					set_car_mode();
+				}
 				break;
 			case EMERGENCY:
 				// 
@@ -77,6 +87,19 @@ int main(void)
 				break;
 		}
 	}
+}
+
+void set_car_mode()
+{
+	state = CAR;
+	led_car_mode();
+}
+
+void set_ship_mode()
+{
+	state = SHIP;
+	ship_timer = SHIP_TIMER_TH;
+	led_ship_mode();
 }
 
 bool is_ship_waiting()
@@ -155,25 +178,15 @@ void LPIT0_init(uint32_t delay)
 	PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);	/* Clock Src = 6 (SPLL2_DIV2_CLK)*/
 	PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clk to LPIT0 regs       */
 
-	/*!
-	 * LPIT Initialization:
-	 */
 	LPIT0->MCR |= LPIT_MCR_M_CEN_MASK; /* DBG_EN-0: Timer chans stop in Debug mode */
-									   /* DOZE_EN=0: Timer chans are stopped in DOZE mode */
-									   /* SW_RST=0: SW reset does not reset timer chans, regs */
-									   /* M_CEN=1: enable module clk (allows writing other LPIT0 regs) */
 
+	// Ch 0: delay_ms, Ch 1: lcd timer, Ch2: 1sec interrupt
 	timeout = delay * 40000;
 	LPIT0->TMR[0].TVAL = timeout;
 	LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
-	/* T_EN=1: Timer channel is enabled */
-	/* CHAIN=0: channel chaining is disabled */
-	/* MODE=0: 32 periodic counter mode */
-	/* TSOT=0: Timer decrements immediately based on restart */
-	/* TSOI=0: Timer does not stop after timeout */
-	/* TROT=0 Timer will not reload on trigger */
-	/* TRG_SRC=0: External trigger soruce */
-	/* TRG_SEL=0: Timer chan 0 trigger source is selected*/
+
+	LPIT0->TMR[2].TVAL = 40000000;
+	LPIT0->TMR[2].TCTRL = LPIT_TMR_TCTRL_T_EN_MASK;
 }
 
 void delay_ms(volatile int ms)
@@ -183,4 +196,11 @@ void delay_ms(volatile int ms)
 	while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK))
 	{
 	}								  /* Wait for LPIT0 CH0 Flag */
+}
+
+// Interrupts
+void LPIT0_Ch2_IRQHandler()
+{
+	LPIT0->MSR |= LPIT_MSR_TIF2_MASK;
+	if (state == SHIP) ship_timer--;
 }
