@@ -5,17 +5,19 @@
 #include "buzzer.h"
 #include "step_moter.h"
 #include "lcd.h"
+#include "led.h"
 #include "servo_moter.h"
 
 enum STATE
 {
-    IDLE = 0,
+    INIT = 0,
+	IDLE,
     CAR,
     SHIP,
     EMERGENCY
 };
 
-int state = IDLE;
+int state = INIT;
 
 void WDOG_disable();
 void LPIT0_init(uint32_t delay);
@@ -33,23 +35,30 @@ int main(void)
 		PTC,
 		PCC_PORTC_INDEX);
 	segment.delay_ms = delay_ms;
-    switch (state)
+
+	led_set_system_green(true);
+	state = IDLE;
+
+	while (1)
 	{
-	case IDLE:
-		while (1) 
+		switch (state)
 		{
-			for (int i = 0; i < 4; i++)
-			{
-				set_num(&segment, i, i);
-			}
+			case IDLE:
+				while (1) 
+				{
+					for (int i = 0; i < 4; i++)
+					{
+						set_num(&segment, i, i);
+					}
+				}
+				break;
+			case SHIP:
+				break;
+			case EMERGENCY:
+				break;
+			default:
+				break;
 		}
-		break;
-	case SHIP:
-		break;
-	case EMERGENCY:
-		break;
-	default:
-		break;
 	}
 }
 
@@ -58,13 +67,49 @@ void init_sys()
 	WDOG_disable();		   /* Disable Watchdog in case it is not done in startup code */
 	SOSC_init_8MHz();	   /* Initialize system oscilator for 8 MHz xtal */
 	SPLL_init_160MHz();	   /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
-	NormalRUNmode_80MHz(); /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
+	NormalRUNmode_80MHz(); /* Initclocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
+	SystemCoreClockUpdate();
+	delay_ms(20);
 	_port_init();
+	lcdinit();
+	delay_ms(200);
 }
 
 void _port_init()
 {
+	/* PORTA */
+	PCC->PCCn[PCC_PORTA_INDEX] = PCC_PCCn_CGC_MASK;
+	// 서보 모터
+	
+	// 스텝 모터
 
+	/* PORTC */
+	// 7-Segment
+
+	/* PORTD */
+	// LCD
+	PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
+	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
+	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
+
+	PCC->PCCn[PCC_FTM2_INDEX] &= ~PCC_PCCn_CGC_MASK;
+	PCC->PCCn[PCC_FTM2_INDEX] |= (PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK); // Clock = 80MHz
+
+	PTD->PDDR |= 0xFE00;
+	for (int i = 9; i <= 15; i++)
+		PORTD->PCR[i] = PORT_PCR_MUX(1);
+	
+	/* PORTE */
+	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
+	// 부저
+	PORTE->PCR[1] = PORT_PCR_MUX(1);
+	// LED
+	// 2: system | 3,4: car | 5, 6: ship
+	PORTE->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
+	PORTE->PCR[LED_CAR_GREEN] = PORT_PCR_MUX(1);
+	PORTE->PCR[LED_CAR_RED] = PORT_PCR_MUX(1);
+	PORTE->PCR[LED_SHIP_GREEN] = PORT_PCR_MUX(1);
+	PORTE->PCR[LED_SHIP_RED] = PORT_PCR_MUX(1);
 }
 
 void WDOG_disable(void) 
