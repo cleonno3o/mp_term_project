@@ -35,7 +35,7 @@ void WDOG_disable();
 void init_sys();
 void _port_init();
 void nvic_init();
-
+void show_system_ready();
 // CAR 상태 사용 함수
 bool is_ship_waiting();
 bool check_ship();
@@ -49,7 +49,7 @@ void set_emergency_mode();
 int main(void) 
 {
 	init_sys();
-	led_set_system_green(true);
+	show_system_ready();
 	set_car_mode();
 
 	while (1)
@@ -110,6 +110,12 @@ void set_ship_mode()
 	led_ship_mode();
 	step_open(STEP_DELAY);
 	servo_ship_mode();
+}
+
+void show_system_ready()
+{
+	led_set_system_green(true);
+	lcd_print_msg("System Ready!\0", "BRIDGE SYSTEM\0");
 }
 
 bool is_ship_waiting()

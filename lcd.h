@@ -114,3 +114,30 @@ void lcdcharinput(char data)
     PTD->PCOR |= ((1 << (BASE + RS)) + (0xF << BASE));
     delay_100ns(30);
 }
+
+void lcd_print_msg(char *msg1, char *msg2)
+{
+    int i = 0;
+    // lcdinput(0x80);
+    while(msg1[i] != '\0')
+    {
+        lcdcharinput(msg1[i]);
+        delay_ms(800);
+        i++;
+    }
+
+    lcdinput(0x80 + 0x40);
+    i = 0;
+    while (msg2[i] != '\0')
+    {
+        lcdcharinput(msg2[i]);
+        delay_ms(800);
+        i++;
+    }
+
+    delay_ms(2000);
+    lcdinput(0x08); // lcd display off
+    delay_ms(400);
+    lcdinput(0x01); // Clear display
+    delay_ms(200);
+}
