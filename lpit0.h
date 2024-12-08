@@ -13,13 +13,16 @@ void LPIT0_init(uint32_t delay)
 
     LPIT0->MCR |= LPIT_MCR_M_CEN_MASK; /* DBG_EN-0: Timer chans stop in Debug mode */
 
-    // Ch 0: delayms, Ch 1: lcd timer, Ch2: 1sec interrupt
+    // Ch 0: delayms, Ch 1: lcd timer, Ch2: 1sec interrupt, Ch3: 0.5 sec intterrupt
     timeout = delay * 40000;
     LPIT0->TMR[0].TVAL = timeout;
     LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
 
     LPIT0->TMR[2].TVAL = 40000000;
     LPIT0->TMR[2].TCTRL = LPIT_TMR_TCTRL_T_EN_MASK;
+
+    LPIT0->TMR[3].TVAL = 20000000;
+    LPIT0->TMR[3].TCTRL = LPIT_TMR_TCTRL_T_EN_MASK;
 }
 
 void delay_ms(volatile int ms)

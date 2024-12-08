@@ -92,9 +92,11 @@ void set_emergency_mode()
 
 void set_car_mode()
 {
+	int prev_state = state;
 	state = CAR;
 	led_car_mode();
-	step_close(STEP_DELAY);
+	if (prev_state != EMERGENCY)
+		step_close(STEP_DELAY);
 	servo_car_mode();
 }
 
@@ -258,6 +260,13 @@ void LPIT0_Ch2_IRQHandler()
 	LPIT0->MSR |= LPIT_MSR_TIF2_MASK;
 	if (state == SHIP) ship_timer--;
 	else if (state == EMERGENCY) emergency_timer--;
+}
+
+void LPIT0_Ch3_IRQHandler()
+{
+	LPIT0->MSR |= LPIT_MSR_TIF3_MASK;
+	if (state == EMERGENCY)
+		led_toggle_all();
 }
 
 void nvic_init()
