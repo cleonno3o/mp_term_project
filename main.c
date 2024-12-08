@@ -25,11 +25,12 @@ enum STATE
 // system
 //// constant
 const int SHIP_TIMER_TH = 30;
+const int EMERGENCY_TIMER_TH = 10;
 const int STEP_DELAY = 2;
 //// value
 int state = INIT;
 bool isRegisterd = false;
-int ship_timer;
+int ship_timer, emergency_timer;
 
 void WDOG_disable();
 void init_sys();
@@ -82,7 +83,10 @@ int main(void)
 				}
 				break;
 			case EMERGENCY:
-				// 
+				if (emergency_timer == 0)
+				{
+					set_car_mode();
+				}
 				break;
 			default:
 				break;
@@ -92,7 +96,11 @@ int main(void)
 
 void set_emergency_mode()
 {
-
+	state = EMERGENCY;
+	emergency_timer = EMERGENCY_TIMER_TH;
+	// TODO: lcd
+	// TODO: led
+	// TODO: buzzer
 }
 
 void set_car_mode()
@@ -215,11 +223,19 @@ void WDOG_disable(void)
 // Interrupts
 void PORTE_IRQHandler()
 {
+	int reason = -1;
 	// ISF비트 0 설정
+	PORTE->PCR[EMERGENCY_SW] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
 	{
+		reason = testSW;
 		isRegisterd = !isRegisterd;
+	}
+	else if ((PORTE->ISFR & (1 << EMERGENCY_SW)) != 0)
+	{
+		reason = EMERGENCY_SW;
+		set_emergency_mode();
 	}
 	// ISF비트 1 설정
 	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
@@ -229,6 +245,7 @@ void LPIT0_Ch2_IRQHandler()
 {
 	LPIT0->MSR |= LPIT_MSR_TIF2_MASK;
 	if (state == SHIP) ship_timer--;
+	else if (state == EMERGENCY) emergency_timer--;
 }
 
 void nvic_init()
