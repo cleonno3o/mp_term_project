@@ -1,54 +1,50 @@
-// #include "device_registers.h"
-// #include "clocks_and_modes.h"
+#include "S32K144.h"
+#include "lpit0.h"
+#define SERVO_PTN PTA
+#define SERVO_CAR 12
+#define SERVO_SHIP 13
 
-// // 서보 모터의 듀티 사이클 계산 함수
-// void set_servo_angle(int angle) {
-//     // 각도에 따른 듀티 사이클 값 계산 (0도 = 2000, 90도 = 4000)
-//     int pwm_value = 2000 + (angle * 2000) / 90;
-//     FTM0->CONTROLS[1].CnV = pwm_value;  // FTM0 채널 1에 듀티 사이클 설정
-// }
+#define FTM_SERVO FTM1
+#define FTM_SERVO_PCC_INDEX PCC_FTM1_INDEX
+#define FTM_SERVO_CAR_CH 6
+#define FTM_SERVO_SHIP_CH 7
 
-// // FTM0 PWM 초기화 함수
-// void FTM0_PWM_Init(void) {
-//     // FTM0 클럭 설정
-//     PCC->PCCn[PCC_FTM0_INDEX] &= ~PCC_PCCn_CGC_MASK;  // 클럭 비활성화
-//     PCC->PCCn[PCC_FTM0_INDEX] |= PCC_PCCn_PCS(0b010) // 8MHz SIRCDIV1_CLK 선택
-//                               | PCC_PCCn_CGC_MASK;   // FTM0 클럭 활성화
+// 서보 모터의 듀티 사이클 계산 함수
+void servo_set_angle(int angle, int servo_no) {
+    // 각도에 따른 듀티 사이클 값 계산 (0도 = 1000, 90도 = 2000)
+    int pwm_value = 1000 + ((angle * 1000) / 180);
+    if (servo_no == SERVO_CAR)
+        FTM_SERVO->CONTROLS[FTM_SERVO_CAR_CH].CnV = pwm_value;
+    else
+        FTM_SERVO->CONTROLS[FTM_SERVO_SHIP_CH].CnV = pwm_value;
+    FTM_SERVO->SC |= FTM_SC_CLKS(3);
+}
 
-//     // FTM0 초기화
-//     FTM0->MODE |= FTM_MODE_WPDIS_MASK;  // Write Protection 비활성화
-//     FTM0->SC = 0x00;                   // 타이머 비활성화
-//     FTM0->CNTIN = 0x00;                // 카운터 초기값
-//     FTM0->MOD = 40000 - 1;             // 20ms 주기 (50Hz)
-//     FTM0->CONTROLS[1].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK; // Edge-aligned PWM
+void servo_car_mode()
+{
+    servo_set_angle(90, SERVO_CAR);
+    servo_set_angle(0, SERVO_SHIP);
+}
 
-//     // FTM0 클럭 소스 설정
-//     FTM0->SC = FTM_SC_PS(7) | FTM_SC_CLKS(1);  // Prescaler = 128, System Clock 사용
-// }
+void servo_ship_mode()
+{
+    servo_set_angle(0, SERVO_CAR);
+    servo_set_angle(90, SERVO_SHIP);
+}
 
-// // PORT 초기화 함수
-// void PORT_Init(void) {
-//     // PTA1 핀을 PWM 출력으로 설정
-//     PCC->PCCn[PCC_PORTA_INDEX] |= PCC_PCCn_CGC_MASK;  // PORTA 클럭 활성화
-//     PORTA->PCR[1] = PORT_PCR_MUX(2);                 // PTA1을 FTM0_CH1로 설정
-// }
+// FTM0 PWM 초기화 함수
+void ftm_servo_init(void) {
+    // FTM0 클럭 설정
+    PCC->PCCn[FTM_SERVO_PCC_INDEX]  &= ~PCC_PCCn_CGC_MASK; // 클럭 비활성화
+    PCC->PCCn[FTM_SERVO_PCC_INDEX]  |= PCC_PCCn_PCS(0b010) // 8MHz SIRCDIV1_CLK 선택
+                                    | PCC_PCCn_CGC_MASK; // FTM0 클럭 활성화
 
-// int main(void) {
-//     WDOG_disable();            // Watchdog 비활성화
-//     SOSC_init_8MHz();          // 시스템 클럭 초기화
-//     SPLL_init_160MHz();
-//     NormalRUNmode_80MHz();
+    FTM_SERVO->CNTIN = 0x00;           // 카운터 초기값
+    FTM_SERVO->MOD = 20000 - 1;        // 20ms 주기 (50Hz)
+    FTM_SERVO->CONTROLS[FTM_SERVO_CAR_CH].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK; // Edge-aligned PWM
+    FTM_SERVO->CONTROLS[FTM_SERVO_SHIP_CH].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
 
-//     PORT_Init();               // 포트 초기화
-//     FTM0_PWM_Init();           // FTM0 PWM 초기화
-
-//     while (1) {
-//         set_servo_angle(0);    // 0도 설정
-//         for (volatile int i = 0; i < 1000000; i++);  // 딜레이
-
-//         set_servo_angle(90);   // 90도 설정
-//         for (volatile int i = 0; i < 1000000; i++);  // 딜레이
-//     }
-
-//     return 0;
-// }
+    // 8로 분주, PWM1활성화
+    FTM_SERVO->SC |= FTM_SC_PS(3) | FTM_SC_PWMEN0_MASK | FTM_SC_PWMEN1_MASK;
+    FTM_SERVO->SC |= FTM_SC_CLKS(3);
+}

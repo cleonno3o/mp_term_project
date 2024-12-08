@@ -99,6 +99,7 @@ void set_car_mode()
 	state = CAR;
 	led_car_mode();
 	step_close(STEP_DELAY);
+	servo_car_mode();
 }
 
 void set_ship_mode()
@@ -107,6 +108,7 @@ void set_ship_mode()
 	ship_timer = SHIP_TIMER_TH;
 	led_ship_mode();
 	step_open(STEP_DELAY);
+	servo_ship_mode();
 }
 
 bool is_ship_waiting()
@@ -137,7 +139,8 @@ void _port_init()
 	/* PORTA */
 	PCC->PCCn[PCC_PORTA_INDEX] = PCC_PCCn_CGC_MASK;
 	// 서보 모터
-	
+	PORTA->PCR[SERVO_CAR] = PORT_PCR_MUX(2);
+	PORTA->PCR[SERVO_SHIP] = PORT_PCR_MUX(2);
 	// 스텝 모터
 	PORTA->PCR[STEP_IN_1] = PORT_PCR_MUX(1);
 	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
