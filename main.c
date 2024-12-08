@@ -8,6 +8,7 @@
 #include "led.h"
 #include "servo_moter.h"
 #include "lpit0.h"
+#include "LPUART.h"
 
 #define EMERGENCY_SW 7
 // test
@@ -275,7 +276,7 @@ void nvic_init()
 	S32_NVIC->ICPR[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
 	S32_NVIC->ISER[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
 	S32_NVIC->IP[PORTE_IRQn] = 0x0;
-
+	
 	// LPIT0 IRQ
 	S32_NVIC->ICPR[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->ISER[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
