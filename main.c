@@ -23,6 +23,19 @@ enum STATE
     EMERGENCY
 };
 
+enum RESULT
+{
+	BLANK = 'B',
+	VALID = 'V',
+	INVALID = 'I'
+};
+
+enum AROUND
+{
+	NOT_EXIST = 'N',
+	EXIST = 'Y'
+};
+
 // system
 //// constant
 const int SHIP_TIMER_TH = 30;
@@ -32,6 +45,8 @@ const int STEP_DELAY = 2;
 int state = INIT;
 bool isRegisterd = false;
 int ship_timer, emergency_timer;
+char from_raspberry_pi = BLANK;
+char to_raspberry_pi = NOT_EXIST;
 
 void WDOG_disable();
 void init_sys();
@@ -120,6 +135,7 @@ void check_around()
 {
 	if (is_ship_exist())
 	{
+		to_raspberry_pi = EXIST;
 		// isRegisterd = check_ship();
 		if (isRegisterd)
 		{
@@ -136,6 +152,7 @@ void check_around()
 	}
 	else
 	{
+		to_raspberry_pi = NOT_EXIST;
 		buzzer_set(false);
 	}
 }
@@ -270,9 +287,21 @@ void LPIT0_Ch3_IRQHandler()
 		led_toggle_all();
 }
 
+void LPUART1_RxTx_IRQHandler()
+{
+	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+        // 수신 데이터 처리
+        from_raspberry_pi = LPUART1->DATA;
+    }
+    if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
+        // 송신 데이터 처리
+        LPUART1->DATA = to_raspberry_pi;
+    }
+}
+
 void nvic_init()
 {
-	// PORTE IRQ 초기화
+	// PORTE IRQ
 	S32_NVIC->ICPR[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
 	S32_NVIC->ISER[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
 	S32_NVIC->IP[PORTE_IRQn] = 0x0;
@@ -281,4 +310,9 @@ void nvic_init()
 	S32_NVIC->ICPR[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->ISER[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->IP[LPIT0_Ch2_IRQn] = 0x1;
+
+	// LPUART IRQ
+	S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
+	S32_NVIC->ISER[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
+	S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0x1;
 }
