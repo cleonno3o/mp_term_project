@@ -9,6 +9,10 @@
 #include "servo_moter.h"
 #include "lpit0.h"
 
+#define EMERGENCY_SW 7
+// test
+int testSW = 8;
+
 enum STATE
 {
     INIT = 0,
@@ -17,6 +21,7 @@ enum STATE
     SHIP,
     EMERGENCY
 };
+
 // system
 //// constant
 const int SHIP_TIMER_TH = 30;
@@ -29,6 +34,7 @@ int ship_timer;
 void WDOG_disable();
 void init_sys();
 void _port_init();
+void nvic_init();
 
 // CAR 상태 사용 함수
 bool is_ship_waiting();
@@ -43,13 +49,6 @@ void set_emergency_mode();
 int main(void) 
 {
 	init_sys();
-	Segment segment;
-	segment_init(
-		&segment,
-		PORTC,
-		PTC,
-		PCC_PORTC_INDEX);
-
 	led_set_system_green(true);
 	set_car_mode();
 
@@ -60,7 +59,8 @@ int main(void)
 			case CAR:
 				if (is_ship_waiting())
 				{
-					if (check_ship())
+					// isRegisterd = check_ship();
+					if (isRegisterd)
 					{
 						set_ship_mode();
 					}
@@ -75,6 +75,7 @@ int main(void)
 				}
 				break;
 			case SHIP:
+				print_4_digit(ship_timer);
 				if (ship_timer == 0)
 				{
 					set_car_mode();
@@ -130,6 +131,7 @@ void init_sys()
 	SystemCoreClockUpdate();
 	delay_ms(20);
 	_port_init();
+	nvic_init();
 	lcdinit();
 	delay_ms(200);
 }
@@ -146,11 +148,18 @@ void _port_init()
 	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
 	PORTA->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
 	PORTA->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
+
+	PTA->PDDR |= 1 << STEP_IN_1 | 1 << STEP_IN_2 | 1 << STEP_IN_3 | 1 << STEP_IN_4;
 	/* PORTC */
 	// 7-Segment
-	
+	PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;
+	for (int i = 1; i <= 11; i++)
+	{
+		PORTC->PCR[i] = PORT_PCR_MUX(1);
+		PTC->PDDR |= 1 << i;
+	}
 	/* PORTD */
-	// LCD
+	// LCD: 9 ~ 15
 	PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
 	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
 	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
@@ -164,14 +173,30 @@ void _port_init()
 	
 	/* PORTE */
 	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
-	// 부저
+	// 부저: 1
 	PORTE->PCR[BUZZER] = PORT_PCR_MUX(1);
-	// LED
+
+	PTE->PDDR |= 1 << BUZZER;
+	// LED: 2 ~ 6
 	PORTE->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
 	PORTE->PCR[LED_CAR_GREEN] = PORT_PCR_MUX(1);
 	PORTE->PCR[LED_CAR_RED] = PORT_PCR_MUX(1);
 	PORTE->PCR[LED_SHIP_GREEN] = PORT_PCR_MUX(1);
 	PORTE->PCR[LED_SHIP_RED] = PORT_PCR_MUX(1);
+
+	PTE->PDDR |= 1 << LED_SYSTEM_GREEN | 
+				1 << LED_CAR_GREEN | 1 << LED_CAR_RED | 
+				1 << LED_SHIP_GREEN | 1 << LED_SHIP_RED;
+	
+	// 119: 7
+	PORTE->PCR[EMERGENCY_SW] = PORT_PCR_MUX(1);
+
+	PTE->PDDR |= 1 << EMERGENCY_SW;
+	
+	// 기타
+	PORTE->PCR[testSW] = PORT_PCR_MUX(1);
+
+	PTE->PDDR |= 1 << testSW;
 }
 
 void WDOG_disable(void) 
@@ -182,8 +207,33 @@ void WDOG_disable(void)
 }
 
 // Interrupts
+void PORTE_IRQHandler()
+{
+	// ISF비트 0 설정
+	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
+	if ((PORTE->ISFR & (1 << testSW)) != 0)
+	{
+		isRegisterd = !isRegisterd;
+	}
+	// ISF비트 1 설정
+	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
+}
+
 void LPIT0_Ch2_IRQHandler()
 {
 	LPIT0->MSR |= LPIT_MSR_TIF2_MASK;
 	if (state == SHIP) ship_timer--;
+}
+
+void nvic_init()
+{
+	// PORTE IRQ 초기화
+	S32_NVIC->ICPR[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
+	S32_NVIC->ISER[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
+	S32_NVIC->IP[PORTE_IRQn] = 0x0;
+
+	// LPIT0 IRQ
+	S32_NVIC->ICPR[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
+	S32_NVIC->ISER[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
+	S32_NVIC->IP[LPIT0_Ch2_IRQn] = 0x1;
 }
