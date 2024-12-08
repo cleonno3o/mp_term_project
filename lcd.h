@@ -1,27 +1,10 @@
+#include "lpit0.h"
+
 #define BASE 9
 #define EN 4
 #define RW 5
 #define RS 6
 #define BF 3
-
-void delay_100ns(uint32_t ns)
-{
-    uint32_t timeout;
-    PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);    // Clock Src = 6 (SPLL2_DIV2_CLK)
-    PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; // Enable clk to LPIT0 regs
-
-    LPIT0->MCR |= LPIT_MCR_M_CEN_MASK;
-
-    timeout = ns * 4;
-
-    LPIT0->TMR[1].TVAL = timeout;
-    LPIT0->TMR[1].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
-
-    while (0 == (LPIT0->MSR & LPIT_MSR_TIF1_MASK))
-    {
-    }                                 /* Wait for LPIT0 CH0 Flag */
-    LPIT0->MSR |= LPIT_MSR_TIF1_MASK; /* Clear LPIT0 timer flag 0 */
-}
 
 void lcdEN(void)
 {
