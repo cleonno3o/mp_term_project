@@ -37,8 +37,9 @@ void init_sys();
 void _port_init();
 void nvic_init();
 void show_system_ready();
+void check_around();
 // CAR 상태 사용 함수
-bool is_ship_waiting();
+bool is_ship_exist();
 bool check_ship();
 void set_ship_mode();
 
@@ -58,24 +59,10 @@ int main(void)
 		switch (state)
 		{
 			case CAR:
-				if (is_ship_waiting())
-				{
-					// isRegisterd = check_ship();
-					if (isRegisterd)
-					{
-						set_ship_mode();
-					}
-					else
-					{
-						buzzer_set(true);
-					}
-				}
-				else
-				{
-					buzzer_set(false);
-				}
+				check_around();
 				break;
 			case SHIP:
+				check_around();
 				print_4_digit(ship_timer);
 				if (ship_timer == 0)
 				{
@@ -126,8 +113,33 @@ void show_system_ready()
 	lcd_print_msg("System Ready!\0", "BRIDGE SYSTEM\0");
 }
 
-bool is_ship_waiting()
+void check_around()
 {
+	if (is_ship_exist())
+	{
+		// isRegisterd = check_ship();
+		if (isRegisterd)
+		{
+			if (state == CAR)
+				set_ship_mode();
+			else if (state == SHIP)
+				ship_timer = SHIP_TIMER_TH;
+		}
+		else
+		{
+			if (state == CAR)
+				buzzer_set(true);
+		}
+	}
+	else
+	{
+		buzzer_set(false);
+	}
+}
+
+bool is_ship_exist()
+{
+	// TODO: 배가 지나가고 있거나 앞에있으면 있는 거임
 	return true;
 }
 
