@@ -1,12 +1,11 @@
 #include "S32K144.h"
+#include "lpit0.h"
 typedef struct {
     PORT_Type *PORTN;
     GPIO_Type *PTN;
     int PCC_INDEX;
     unsigned int fnd_data[10];
     unsigned int fnd_sel[4];
-
-    void (*delay_ms)(volatile int ms);
 } Segment;
 
 void segment_init(Segment *segment, PORT_Type *port_type, GPIO_Type *ptn, int pcc_index) {
@@ -36,6 +35,6 @@ void set_num(Segment *segment, int num, int pos)
     segment->PTN->PSOR |= fnd_sel[pos];  // ouput com port select
     segment->PTN->PCOR |= 0xFE;          // clear data output
     segment->PTN->PSOR |= fnd_data[num]; // set data output
-    segment->delay_ms(2);
+    delay_ms(2);
     segment->PTN->PCOR |= 0xFFF; // clear all
 }

@@ -7,6 +7,7 @@
 #include "lcd.h"
 #include "led.h"
 #include "servo_moter.h"
+#include "lpit0.h"
 
 enum STATE
 {
@@ -19,15 +20,13 @@ enum STATE
 // system
 //// constant
 const int SHIP_TIMER_TH = 30;
-
+const int STEP_DELAY = 2;
 //// value
 int state = INIT;
 bool isRegisterd = false;
 int ship_timer;
 
 void WDOG_disable();
-void LPIT0_init(uint32_t delay);
-void delay_ms(volatile int ms);
 void init_sys();
 void _port_init();
 
@@ -48,7 +47,6 @@ int main(void)
 		PORTC,
 		PTC,
 		PCC_PORTC_INDEX);
-	segment.delay_ms = delay_ms;
 
 	led_set_system_green(true);
 	set_car_mode();
@@ -93,6 +91,7 @@ void set_car_mode()
 {
 	state = CAR;
 	led_car_mode();
+	step_close(STEP_DELAY);
 }
 
 void set_ship_mode()
@@ -100,6 +99,7 @@ void set_ship_mode()
 	state = SHIP;
 	ship_timer = SHIP_TIMER_TH;
 	led_ship_mode();
+	step_open(STEP_DELAY);
 }
 
 bool is_ship_waiting()
@@ -135,7 +135,7 @@ void _port_init()
 
 	/* PORTC */
 	// 7-Segment
-
+	
 	/* PORTD */
 	// LCD
 	PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
@@ -166,36 +166,6 @@ void WDOG_disable(void)
 	WDOG->CNT = 0xD928C520;	  /* Unlock watchdog 		*/
 	WDOG->TOVAL = 0x0000FFFF; /* Maximum timeout value 	*/
 	WDOG->CS = 0x00002100;	  /* Disable watchdog 		*/
-}
-
-void LPIT0_init(uint32_t delay)
-{
-	uint32_t timeout;
-	/*!
-	 * LPIT Clocking:
-	 * ==============================
-	 */
-	PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);	/* Clock Src = 6 (SPLL2_DIV2_CLK)*/
-	PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clk to LPIT0 regs       */
-
-	LPIT0->MCR |= LPIT_MCR_M_CEN_MASK; /* DBG_EN-0: Timer chans stop in Debug mode */
-
-	// Ch 0: delay_ms, Ch 1: lcd timer, Ch2: 1sec interrupt
-	timeout = delay * 40000;
-	LPIT0->TMR[0].TVAL = timeout;
-	LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
-
-	LPIT0->TMR[2].TVAL = 40000000;
-	LPIT0->TMR[2].TCTRL = LPIT_TMR_TCTRL_T_EN_MASK;
-}
-
-void delay_ms(volatile int ms)
-{
-	LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
-	LPIT0_init(ms); /* Initialize PIT0 for 1 second timeout  */
-	while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK))
-	{
-	}								  /* Wait for LPIT0 CH0 Flag */
 }
 
 // Interrupts
