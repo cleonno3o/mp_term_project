@@ -38,6 +38,8 @@ void set_ship_mode();
 // SHIP 상태 사용 함수
 void set_car_mode();
 
+void set_emergency_mode();
+
 int main(void) 
 {
 	init_sys();
@@ -87,6 +89,11 @@ int main(void)
 	}
 }
 
+void set_emergency_mode()
+{
+
+}
+
 void set_car_mode()
 {
 	state = CAR;
@@ -132,7 +139,10 @@ void _port_init()
 	// 서보 모터
 	
 	// 스텝 모터
-
+	PORTA->PCR[STEP_IN_1] = PORT_PCR_MUX(1);
+	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
+	PORTA->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
+	PORTA->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
 	/* PORTC */
 	// 7-Segment
 	
