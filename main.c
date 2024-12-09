@@ -18,7 +18,6 @@ enum STATE
 {
     INIT = 0,
 	CAR,
-    CAR,
     SHIP,
     EMERGENCY
 };
@@ -37,16 +36,31 @@ enum AROUND
 };
 
 // system
-//// constant
-const int SHIP_TIMER_TH = 30;
-const int EMERGENCY_TIMER_TH = 10;
-const int STEP_DELAY = 2;
-//// value
-int state = INIT;
-bool isRegisterd = false;
-int ship_timer, emergency_timer;
-char from_raspberry_pi = BLANK;
-char to_raspberry_pi = NOT_EXIST;
+typedef struct {
+	//// value
+	int state;
+	bool isRegisterd;
+	int ship_timer, emergency_timer;
+	char from_raspberry_pi;
+	char to_raspberry_pi;
+	//// constant
+	const int SHIP_TIMER_TH;
+	const int EMERGENCY_TIMER_TH;
+	const int STEP_DELAY;
+} System;
+
+System system = {
+	.state = INIT,
+	.isRegisterd = false,
+	.ship_timer = 0, 
+	.emergency_timer = 0,
+	.from_raspberry_pi = BLANK,
+	.to_raspberry_pi = NOT_EXIST,
+	
+	.SHIP_TIMER_TH = 30,
+	.EMERGENCY_TIMER_TH = 10,
+	.STEP_DELAY = 2
+};
 
 void WDOG_disable();
 void init_sys();
@@ -72,21 +86,21 @@ int main(void)
 
 	while (1)
 	{
-		switch (state)
+		switch (system.state)
 		{
 			case CAR:
 				check_around();
 				break;
 			case SHIP:
 				check_around();
-				print_4_digit(ship_timer);
-				if (ship_timer == 0)
+				print_4_digit(system.ship_timer);
+				if (system.ship_timer == 0)
 				{
 					set_car_mode();
 				}
 				break;
 			case EMERGENCY:
-				if (emergency_timer == 0)
+				if (system.emergency_timer == 0)
 				{
 					set_car_mode();
 				}
@@ -99,8 +113,8 @@ int main(void)
 
 void set_emergency_mode()
 {
-	state = EMERGENCY;
-	emergency_timer = EMERGENCY_TIMER_TH;
+	system.state = EMERGENCY;
+	system.emergency_timer = system.EMERGENCY_TIMER_TH;
 	// TODO: lcd
 	// TODO: led
 	// TODO: buzzer
@@ -108,20 +122,20 @@ void set_emergency_mode()
 
 void set_car_mode()
 {
-	int prev_state = state;
-	state = CAR;
+	int prev_state = system.state;
+	system.state = CAR;
 	led_car_mode();
 	if (prev_state != EMERGENCY)
-		step_close(STEP_DELAY);
+		step_close(system.STEP_DELAY);
 	servo_car_mode();
 }
 
 void set_ship_mode()
 {
-	state = SHIP;
-	ship_timer = SHIP_TIMER_TH;
+	system.state = SHIP;
+	system.ship_timer = system.SHIP_TIMER_TH;
 	led_ship_mode();
-	step_open(STEP_DELAY);
+	step_open(system.STEP_DELAY);
 	servo_ship_mode();
 }
 
@@ -135,24 +149,24 @@ void check_around()
 {
 	if (is_ship_exist())
 	{
-		to_raspberry_pi = EXIST;
+		system.to_raspberry_pi = EXIST;
 		// isRegisterd = check_ship();
-		if (isRegisterd)
+		if (system.isRegisterd)
 		{
-			if (state == CAR)
+			if (system.state == CAR)
 				set_ship_mode();
-			else if (state == SHIP)
-				ship_timer = SHIP_TIMER_TH;
+			else if (system.state == SHIP)
+				system.ship_timer = system.SHIP_TIMER_TH;
 		}
 		else
 		{
-			if (state == CAR)
+			if (system.state == CAR)
 				buzzer_set(true);
 		}
 	}
 	else
 	{
-		to_raspberry_pi = NOT_EXIST;
+		system.to_raspberry_pi = NOT_EXIST;
 		buzzer_set(false);
 	}
 }
@@ -262,7 +276,7 @@ void PORTE_IRQHandler()
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
 	{
 		reason = testSW;
-		isRegisterd = !isRegisterd;
+		system.isRegisterd = !system.isRegisterd;
 	}
 	else if ((PORTE->ISFR & (1 << EMERGENCY_SW)) != 0)
 	{
@@ -276,14 +290,14 @@ void PORTE_IRQHandler()
 void LPIT0_Ch2_IRQHandler()
 {
 	LPIT0->MSR |= LPIT_MSR_TIF2_MASK;
-	if (state == SHIP) ship_timer--;
-	else if (state == EMERGENCY) emergency_timer--;
+	if (system.state == SHIP) system.ship_timer--;
+	else if (system.state == EMERGENCY) system.emergency_timer--;
 }
 
 void LPIT0_Ch3_IRQHandler()
 {
 	LPIT0->MSR |= LPIT_MSR_TIF3_MASK;
-	if (state == EMERGENCY)
+	if (system.state == EMERGENCY)
 		led_toggle_all();
 }
 
@@ -291,11 +305,11 @@ void LPUART1_RxTx_IRQHandler()
 {
 	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
         // 수신 데이터 처리
-        from_raspberry_pi = LPUART1->DATA;
+        system.from_raspberry_pi = LPUART1->DATA;
     }
     if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
         // 송신 데이터 처리
-        LPUART1->DATA = to_raspberry_pi;
+        LPUART1->DATA = system.to_raspberry_pi;
     }
 }
 
