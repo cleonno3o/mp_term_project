@@ -8,7 +8,7 @@
 //#include "lcd.h"
 #include "led.h"
 #include "servo_moter.h"
-#include "lpit0.h"
+#include "lpit.h"
 //#include "LPUART.h"
 
 #define EMERGENCY_SW 7
@@ -60,7 +60,7 @@ System system = {
 	.to_raspberry_pi = NOT_EXIST,
 	
 	.SHIP_TIMER_TH = 5,
-	.EMERGENCY_TIMER_TH = 5,
+	.EMERGENCY_TIMER_TH = 3,
 	.STEP_DELAY = 2
 };
 
@@ -106,6 +106,7 @@ int main(void)
 				}
 				break;
 			case EMERGENCY:
+				print_4_digit(system.emergency_timer);
 				if (system.emergency_timer == 0)
 				{
 					set_car_mode();
@@ -204,6 +205,7 @@ void init_sys()
 //	lcdinit();
 	delay_ms(200);
     ftm_servo_init();
+	lpit_init(1);
 	nvic_init();
 }
 
@@ -219,6 +221,12 @@ void _port_init()
 	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
 	PORTA->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
 	PORTA->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
+
+	/* PORTB */
+	PCC->PCCn[PCC_PORTB_INDEX] = PCC_PCCn_CGC_MASK;
+	// KeyPad
+	
+
     /* PORTC */
 	// 7-Segment
 	PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;
@@ -308,7 +316,10 @@ void LPIT0_Ch3_IRQHandler()
 {
 	LPIT0->MSR |= LPIT_MSR_TIF3_MASK;
 	if (system.state == EMERGENCY)
+	{
 		led_toggle_all();
+		buzzer_toggle();
+	}
 }
 
 // void LPUART1_RxTx_IRQHandler()

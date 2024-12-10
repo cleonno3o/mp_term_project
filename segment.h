@@ -1,6 +1,6 @@
 // #include "S32K144.h"
 #include "device_registers.h"
-#include "lpit0.h"
+#include "lpit.h"
 #define SEGMENT_PTN PTC
 
 void set_num (int num, int pos)

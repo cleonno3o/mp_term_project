@@ -1,5 +1,5 @@
 #include "S32K144.h"
-#include "lpit0.h"
+#include "lpit.h"
 
 #define BASE 9
 #define EN 4

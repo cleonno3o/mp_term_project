@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "clocks_and_modes.h": "c",
-        "device_registers.h": "c"
+        "device_registers.h": "c",
+        "buzzer.h": "c",
+        "segment.h": "c",
+        "step_moter.h": "c",
+        "servo_moter.h": "c"
     }
 }

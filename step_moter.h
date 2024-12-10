@@ -1,6 +1,6 @@
 #include "device_registers.h"
 // #include "S32K144.h"
-#include "lpit0.h"
+#include "lpit.h"
 
 #define STEP_PTN PTA
 #define STEP_IN_1 3

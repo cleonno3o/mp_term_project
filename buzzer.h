@@ -3,10 +3,16 @@
 
 #define BUZZER 1
 #define BUZZER_PTN PTE
+
 void buzzer_set(bool on)
 {
     if (on)
         BUZZER_PTN->PSOR = 1 << BUZZER;
     else
         BUZZER_PTN->PCOR = 1 << BUZZER;
+}
+
+void buzzer_toggle()
+{
+    BUZZER_PTN->PTOR = 1 << BUZZER;
 }
