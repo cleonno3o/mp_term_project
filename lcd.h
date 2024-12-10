@@ -1,3 +1,4 @@
+
 #include "lpit0.h"
 
 #define BASE 9
@@ -5,6 +6,11 @@
 #define RW 5
 #define RS 6
 #define BF 3
+
+void lcdEN();
+void lcdNEN();
+void lcdinput(uint16_t);
+void lcdinit();
 
 void lcdEN(void)
 {

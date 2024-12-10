@@ -1,4 +1,6 @@
-#include "S32K144.h"
+// #include "S32K144.h"
+#include "device_registers.h"
+
 #define LED_PTN PTE
 #define LED_SYSTEM_GREEN 2
 #define LED_CAR_GREEN 3

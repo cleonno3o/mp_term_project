@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "clocks_and_modes.h": "c",
+        "device_registers.h": "c"
+    }
+}

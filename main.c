@@ -1,16 +1,18 @@
 #include "device_registers.h"
 #include "clocks_and_modes.h"
+#include "S32K144.h"
 // librarys
 #include "segment.h"
 #include "buzzer.h"
-#include "step_moter.h"
-#include "lcd.h"
+//#include "step_moter.h"
+//#include "lcd.h"
 #include "led.h"
 #include "servo_moter.h"
 #include "lpit0.h"
-#include "LPUART.h"
+//#include "LPUART.h"
 
 #define EMERGENCY_SW 7
+
 // test
 int testSW = 8;
 
@@ -57,8 +59,8 @@ System system = {
 	.from_raspberry_pi = BLANK,
 	.to_raspberry_pi = NOT_EXIST,
 	
-	.SHIP_TIMER_TH = 30,
-	.EMERGENCY_TIMER_TH = 10,
+	.SHIP_TIMER_TH = 5,
+	.EMERGENCY_TIMER_TH = 5,
 	.STEP_DELAY = 2
 };
 
@@ -68,21 +70,25 @@ void _port_init();
 void nvic_init();
 void show_system_ready();
 void check_around();
-// CAR 상태 사용 함수
+// CAR ���� ��� �Լ�
 bool is_ship_exist();
 bool check_ship();
 void set_ship_mode();
 
-// SHIP 상태 사용 함수
+// SHIP ���� ��� �Լ�
 void set_car_mode();
 
 void set_emergency_mode();
-
 int main(void) 
 {
 	init_sys();
+    led_set_car_green(true);
+    led_set_car_red(true);
+    led_set_ship_green(true);
+    led_set_ship_red(true);
 	show_system_ready();
 	set_car_mode();
+    buzzer_set(true);
 
 	while (1)
 	{
@@ -125,8 +131,8 @@ void set_car_mode()
 	int prev_state = system.state;
 	system.state = CAR;
 	led_car_mode();
-	if (prev_state != EMERGENCY)
-		step_close(system.STEP_DELAY);
+//	if (prev_state != EMERGENCY)
+//		step_close(system.STEP_DELAY);
 	servo_car_mode();
 }
 
@@ -135,14 +141,15 @@ void set_ship_mode()
 	system.state = SHIP;
 	system.ship_timer = system.SHIP_TIMER_TH;
 	led_ship_mode();
-	step_open(system.STEP_DELAY);
+    buzzer_set(false);
+//	step_open(system.STEP_DELAY);
 	servo_ship_mode();
 }
 
 void show_system_ready()
 {
 	led_set_system_green(true);
-	lcd_print_msg("System Ready!\0", "BRIDGE SYSTEM\0");
+//	lcd_print_msg("System Ready!\0", "BRIDGE SYSTEM\0");
 }
 
 void check_around()
@@ -151,6 +158,8 @@ void check_around()
 	{
 		system.to_raspberry_pi = EXIST;
 		// isRegisterd = check_ship();
+        // temp
+        //if (system.state == SHIP) system.isRegisterd = false;
 		if (system.isRegisterd)
 		{
 			if (system.state == CAR)
@@ -161,7 +170,11 @@ void check_around()
 		else
 		{
 			if (system.state == CAR)
-				buzzer_set(true);
+            {
+                buzzer_set(true);
+                //system.isRegisterd = true;
+            }
+
 		}
 	}
 	else
@@ -173,7 +186,7 @@ void check_around()
 
 bool is_ship_exist()
 {
-	// TODO: 배가 지나가고 있거나 앞에있으면 있는 거임
+	// TODO: �谡 �������� �ְų� �տ������� �ִ� ����
 	return true;
 }
 
@@ -189,28 +202,22 @@ void init_sys()
 	SPLL_init_160MHz();	   /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
 	NormalRUNmode_80MHz(); /* Initclocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
 	SystemCoreClockUpdate();
-	delay_ms(20);
+//	delay_ms(20);
 	_port_init();
+    ftm_servo_init();
 	nvic_init();
-	lcdinit();
-	delay_ms(200);
+//	lcdinit();
+//	delay_ms(200);
 }
 
 void _port_init()
 {
-	/* PORTA */
+    /* PORTA */
 	PCC->PCCn[PCC_PORTA_INDEX] = PCC_PCCn_CGC_MASK;
-	// 서보 모터
+	// ���� ����
 	PORTA->PCR[SERVO_CAR] = PORT_PCR_MUX(2);
 	PORTA->PCR[SERVO_SHIP] = PORT_PCR_MUX(2);
-	// 스텝 모터
-	PORTA->PCR[STEP_IN_1] = PORT_PCR_MUX(1);
-	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
-	PORTA->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
-	PORTA->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
-
-	PTA->PDDR |= 1 << STEP_IN_1 | 1 << STEP_IN_2 | 1 << STEP_IN_3 | 1 << STEP_IN_4;
-	/* PORTC */
+    /* PORTC */
 	// 7-Segment
 	PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;
 	for (int i = 1; i <= 11; i++)
@@ -218,24 +225,10 @@ void _port_init()
 		PORTC->PCR[i] = PORT_PCR_MUX(1);
 		PTC->PDDR |= 1 << i;
 	}
-	/* PORTD */
-	// LCD: 9 ~ 15
-	PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
-	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
-	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
-
-	PCC->PCCn[PCC_FTM2_INDEX] &= ~PCC_PCCn_CGC_MASK;
-	PCC->PCCn[PCC_FTM2_INDEX] |= (PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK); // Clock = 80MHz
-
-	PTD->PDDR |= 0xFE00;
-	for (int i = 9; i <= 15; i++)
-		PORTD->PCR[i] = PORT_PCR_MUX(1);
-	
 	/* PORTE */
 	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
-	// 부저: 1
+    // ����: 1
 	PORTE->PCR[BUZZER] = PORT_PCR_MUX(1);
-
 	PTE->PDDR |= 1 << BUZZER;
 	// LED: 2 ~ 6
 	PORTE->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
@@ -247,16 +240,15 @@ void _port_init()
 	PTE->PDDR |= 1 << LED_SYSTEM_GREEN | 
 				1 << LED_CAR_GREEN | 1 << LED_CAR_RED | 
 				1 << LED_SHIP_GREEN | 1 << LED_SHIP_RED;
-	
-	// 119: 7
-	PORTE->PCR[EMERGENCY_SW] = PORT_PCR_MUX(1);
+    // 119: 7
+	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
 
-	PTE->PDDR |= 1 << EMERGENCY_SW;
+	PTE->PDDR &= ~(1 << EMERGENCY_SW);
 	
-	// 기타
-	PORTE->PCR[testSW] = PORT_PCR_MUX(1);
+	// ��Ÿ
+	PORTE->PCR[testSW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
 
-	PTE->PDDR |= 1 << testSW;
+	PTE->PDDR &= ~(1 << testSW);
 }
 
 void WDOG_disable(void) 
@@ -270,7 +262,7 @@ void WDOG_disable(void)
 void PORTE_IRQHandler()
 {
 	int reason = -1;
-	// ISF비트 0 설정
+	// ISF��Ʈ 0 ����
 	PORTE->PCR[EMERGENCY_SW] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
@@ -283,7 +275,7 @@ void PORTE_IRQHandler()
 		reason = EMERGENCY_SW;
 		set_emergency_mode();
 	}
-	// ISF비트 1 설정
+	// ISF��Ʈ 1 ����
 	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
 }
 
@@ -301,32 +293,15 @@ void LPIT0_Ch3_IRQHandler()
 		led_toggle_all();
 }
 
-void LPUART1_RxTx_IRQHandler()
-{
-	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
-        // 수신 데이터 처리
-        system.from_raspberry_pi = LPUART1->DATA;
-    }
-    if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
-        // 송신 데이터 처리
-        LPUART1->DATA = system.to_raspberry_pi;
-    }
-}
-
 void nvic_init()
 {
 	// PORTE IRQ
 	S32_NVIC->ICPR[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
 	S32_NVIC->ISER[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
-	S32_NVIC->IP[PORTE_IRQn] = 0x0;
+	S32_NVIC->IP[PORTE_IRQn] = 0x0A;
 	
 	// LPIT0 IRQ
 	S32_NVIC->ICPR[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->ISER[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
-	S32_NVIC->IP[LPIT0_Ch2_IRQn] = 0x1;
-
-	// LPUART IRQ
-	S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
-	S32_NVIC->ISER[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
-	S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0x1;
+	S32_NVIC->IP[LPIT0_Ch2_IRQn] = 0xB;
 }

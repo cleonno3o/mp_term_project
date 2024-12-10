@@ -7,7 +7,9 @@
  */
 
 //#include "S32K144.h" /* include peripheral declarations S32K144 */
-#include "S32K144.h"
+// #include "S32K144.h"
+#include "device_registers.h"
+
 
 void LPUART1_init(void)  /* Init. summary: 9600 baud, 1 stop bit, 8 bit format, no parity */
 {

@@ -1,4 +1,5 @@
-#include "S32K144.h"
+// #include "S32K144.h"
+#include "device_registers.h"
 
 #define BUZZER 1
 #define BUZZER_PTN PTE

@@ -1,4 +1,5 @@
-#include "S32K144.h"
+// #include "S32K144.h"
+#include "device_registers.h"
 #include "lpit0.h"
 #define SERVO_PTN PTA
 #define SERVO_CAR 12
@@ -45,6 +46,6 @@ void ftm_servo_init(void) {
     FTM_SERVO->CONTROLS[FTM_SERVO_SHIP_CH].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
 
     // 8로 분주, PWM1활성화
-    FTM_SERVO->SC |= FTM_SC_PS(3) | FTM_SC_PWMEN0_MASK | FTM_SC_PWMEN1_MASK;
-    FTM_SERVO->SC |= FTM_SC_CLKS(3);
+    FTM_SERVO->SC |= FTM_SC_PS(3) | FTM_SC_PWMEN6_MASK | FTM_SC_PWMEN7_MASK;
+    //FTM_SERVO->SC |= FTM_SC_CLKS(3);
 }
