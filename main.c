@@ -4,7 +4,7 @@
 // librarys
 #include "segment.h"
 #include "buzzer.h"
-//#include "step_moter.h"
+#include "step_moter.h"
 //#include "lcd.h"
 #include "led.h"
 #include "servo_moter.h"
@@ -70,15 +70,16 @@ void _port_init();
 void nvic_init();
 void show_system_ready();
 void check_around();
-// CAR ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
+// CAR 
 bool is_ship_exist();
 bool check_ship();
 void set_ship_mode();
 
-// SHIP ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
+// SHIP
 void set_car_mode();
 
 void set_emergency_mode();
+
 int main(void) 
 {
 	init_sys();
@@ -88,7 +89,6 @@ int main(void)
     led_set_ship_red(true);
 	show_system_ready();
 	set_car_mode();
-    buzzer_set(true);
 
 	while (1)
 	{
@@ -158,8 +158,6 @@ void check_around()
 	{
 		system.to_raspberry_pi = EXIST;
 		// isRegisterd = check_ship();
-        // temp
-        //if (system.state == SHIP) system.isRegisterd = false;
 		if (system.isRegisterd)
 		{
 			if (system.state == CAR)
@@ -172,7 +170,6 @@ void check_around()
 			if (system.state == CAR)
             {
                 buzzer_set(true);
-                //system.isRegisterd = true;
             }
 
 		}
@@ -186,7 +183,7 @@ void check_around()
 
 bool is_ship_exist()
 {
-	// TODO: ï¿½è°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö°Å³ï¿½ ï¿½Õ¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// TODO: ¹è°¡ Áö³ª°¡°í ÀÖ°Å³ª ¾Õ¿¡ÀÖÀ¸¸é ÀÖ´Â °ÅÀÓ
 	return true;
 }
 
@@ -202,21 +199,26 @@ void init_sys()
 	SPLL_init_160MHz();	   /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
 	NormalRUNmode_80MHz(); /* Initclocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
 	SystemCoreClockUpdate();
-//	delay_ms(20);
+	delay_ms(20);
 	_port_init();
     ftm_servo_init();
-	nvic_init();
 //	lcdinit();
-//	delay_ms(200);
+	delay_ms(200);
+	nvic_init();
 }
 
 void _port_init()
 {
     /* PORTA */
 	PCC->PCCn[PCC_PORTA_INDEX] = PCC_PCCn_CGC_MASK;
-	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// ¼­º¸¸ðÅÍ
 	PORTA->PCR[SERVO_CAR] = PORT_PCR_MUX(2);
 	PORTA->PCR[SERVO_SHIP] = PORT_PCR_MUX(2);
+	// ½ºÅÜ ¸ðÅÍ
+	PORTA->PCR[STEP_IN_1] = PORT_PCR_MUX(1);
+	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
+	PORTA->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
+	PORTA->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
     /* PORTC */
 	// 7-Segment
 	PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;
@@ -225,9 +227,23 @@ void _port_init()
 		PORTC->PCR[i] = PORT_PCR_MUX(1);
 		PTC->PDDR |= 1 << i;
 	}
+
+	// /* PORTD */
+	// // LCD: 9 ~ 15
+	// PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
+	// PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
+	// PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
+
+	// PCC->PCCn[PCC_FTM2_INDEX] &= ~PCC_PCCn_CGC_MASK;
+	// PCC->PCCn[PCC_FTM2_INDEX] |= (PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK); // Clock = 80MHz
+
+	// PTD->PDDR |= 0xFE00;
+	// for (int i = 9; i <= 15; i++)
+	// 	PORTD->PCR[i] = PORT_PCR_MUX(1);
+
 	/* PORTE */
 	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
-    // ï¿½ï¿½ï¿½ï¿½: 1
+    // ºÎÀú: 1
 	PORTE->PCR[BUZZER] = PORT_PCR_MUX(1);
 	PTE->PDDR |= 1 << BUZZER;
 	// LED: 2 ~ 6
@@ -242,12 +258,13 @@ void _port_init()
 				1 << LED_SHIP_GREEN | 1 << LED_SHIP_RED;
     // 119: 7
 	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
-
 	PTE->PDDR &= ~(1 << EMERGENCY_SW);
 	
-	// ï¿½ï¿½Å¸
+	// Å×½ºÆ®
+	/*
+	testSW: isRegistered¹ÝÀü Å×½ºÆ®
+	*/
 	PORTE->PCR[testSW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
-
 	PTE->PDDR &= ~(1 << testSW);
 }
 
@@ -262,7 +279,7 @@ void WDOG_disable(void)
 void PORTE_IRQHandler()
 {
 	int reason = -1;
-	// ISFï¿½ï¿½Æ® 0 ï¿½ï¿½ï¿½ï¿½
+	// ISFºñÆ® 0 ÃÊ±âÈ­
 	PORTE->PCR[EMERGENCY_SW] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
@@ -275,7 +292,8 @@ void PORTE_IRQHandler()
 		reason = EMERGENCY_SW;
 		set_emergency_mode();
 	}
-	// ISFï¿½ï¿½Æ® 1 ï¿½ï¿½ï¿½ï¿½
+	// ISFºñÆ® 1 ÃÊ±âÈ­
+	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_ISF_MASK;
 	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
 }
 
@@ -293,6 +311,18 @@ void LPIT0_Ch3_IRQHandler()
 		led_toggle_all();
 }
 
+// void LPUART1_RxTx_IRQHandler()
+// {
+// 	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+//         // ¼ö½Å µ¥ÀÌÅÍ Ã³¸®
+//         system.from_raspberry_pi = LPUART1->DATA;
+//     }
+//     if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
+//         // ¼Û½Å µ¥ÀÌÅÍ Ã³¸®
+//         LPUART1->DATA = system.to_raspberry_pi;
+//     }
+// }
+
 void nvic_init()
 {
 	// PORTE IRQ
@@ -304,4 +334,9 @@ void nvic_init()
 	S32_NVIC->ICPR[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->ISER[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->IP[LPIT0_Ch2_IRQn] = 0xB;
+
+	// // LPUART IRQ
+	// S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
+	// S32_NVIC->ISER[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
+	// S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0x1;
 }
