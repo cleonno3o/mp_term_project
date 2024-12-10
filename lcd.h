@@ -1,4 +1,4 @@
-
+#include "S32K144.h"
 #include "lpit0.h"
 
 #define BASE 9

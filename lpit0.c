@@ -1,4 +1,5 @@
 #include "device_registers.h"
+#include "S32K144.h"
 #include <stdint.h>
 #include "lpit0.h"
 void LPIT0_init(uint32_t delay)

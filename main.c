@@ -201,9 +201,9 @@ void init_sys()
 	SystemCoreClockUpdate();
 	delay_ms(20);
 	_port_init();
-    ftm_servo_init();
 //	lcdinit();
 	delay_ms(200);
+    ftm_servo_init();
 	nvic_init();
 }
 
