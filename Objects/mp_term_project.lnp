@@ -1,6 +1,7 @@
 --cpu=Cortex-M4.fp.sp
 ".\objects\main.o"
 ".\objects\clocks_and_modes.o"
+".\objects\lpit.o"
 ".\objects\startup.o"
 ".\objects\startup_s32k144.o"
 ".\objects\system_s32k144.o"

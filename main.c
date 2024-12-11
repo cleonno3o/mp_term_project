@@ -1,20 +1,22 @@
 #include "device_registers.h"
 #include "clocks_and_modes.h"
-#include "S32K144.h"
+//#include "S32K144.h"
 // librarys
 #include "segment.h"
 #include "buzzer.h"
 #include "step_moter.h"
 //#include "lcd.h"
 #include "led.h"
-#include "servo_moter.h"
+//#include "servo_moter.h"
 #include "lpit.h"
+//#include "keypad.h"
 //#include "LPUART.h"
 
 #define EMERGENCY_SW 7
 
 // test
 int testSW = 8;
+int SYSTEM_STOP = 9;
 
 enum STATE
 {
@@ -45,6 +47,7 @@ typedef struct {
 	int ship_timer, emergency_timer;
 	char from_raspberry_pi;
 	char to_raspberry_pi;
+	bool system_stop;
 	//// constant
 	const int SHIP_TIMER_TH;
 	const int EMERGENCY_TIMER_TH;
@@ -58,8 +61,9 @@ System system = {
 	.emergency_timer = 0,
 	.from_raspberry_pi = BLANK,
 	.to_raspberry_pi = NOT_EXIST,
-	
-	.SHIP_TIMER_TH = 5,
+	.system_stop = false,
+
+	.SHIP_TIMER_TH = 10,
 	.EMERGENCY_TIMER_TH = 3,
 	.STEP_DELAY = 2
 };
@@ -87,11 +91,11 @@ int main(void)
     led_set_car_red(true);
     led_set_ship_green(true);
     led_set_ship_red(true);
-	show_system_ready();
+    show_system_ready();
 	set_car_mode();
-
 	while (1)
 	{
+		if (system.system_stop) return 0;
 		switch (system.state)
 		{
 			case CAR:
@@ -116,6 +120,7 @@ int main(void)
 				break;
 		}
 	}
+	return 0;
 }
 
 void set_emergency_mode()
@@ -132,9 +137,9 @@ void set_car_mode()
 	int prev_state = system.state;
 	system.state = CAR;
 	led_car_mode();
-//	if (prev_state != EMERGENCY)
-//		step_close(system.STEP_DELAY);
-	servo_car_mode();
+	if (prev_state != EMERGENCY)
+		step_close(system.STEP_DELAY);
+//	servo_car_mode();
 }
 
 void set_ship_mode()
@@ -143,8 +148,8 @@ void set_ship_mode()
 	system.ship_timer = system.SHIP_TIMER_TH;
 	led_ship_mode();
     buzzer_set(false);
-//	step_open(system.STEP_DELAY);
-	servo_ship_mode();
+	step_open(system.STEP_DELAY);
+//	servo_ship_mode();
 }
 
 void show_system_ready()
@@ -204,8 +209,7 @@ void init_sys()
 	_port_init();
 //	lcdinit();
 	delay_ms(200);
-    ftm_servo_init();
-	lpit_init(1);
+	ftm_servo_init();
 	nvic_init();
 }
 
@@ -226,7 +230,6 @@ void _port_init()
 	PCC->PCCn[PCC_PORTB_INDEX] = PCC_PCCn_CGC_MASK;
 	// KeyPad
 	
-
     /* PORTC */
 	// 7-Segment
 	PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;
@@ -236,18 +239,18 @@ void _port_init()
 		PTC->PDDR |= 1 << i;
 	}
 
-	// /* PORTD */
-	// // LCD: 9 ~ 15
-	// PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
-	// PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
-	// PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
+	/* PORTD */
+	// LCD: 9 ~ 15
+	PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
+	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
+	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
 
-	// PCC->PCCn[PCC_FTM2_INDEX] &= ~PCC_PCCn_CGC_MASK;
-	// PCC->PCCn[PCC_FTM2_INDEX] |= (PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK); // Clock = 80MHz
+	PCC->PCCn[PCC_FTM2_INDEX] &= ~PCC_PCCn_CGC_MASK;
+	PCC->PCCn[PCC_FTM2_INDEX] |= (PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK); // Clock = 80MHz
 
-	// PTD->PDDR |= 0xFE00;
-	// for (int i = 9; i <= 15; i++)
-	// 	PORTD->PCR[i] = PORT_PCR_MUX(1);
+	PTD->PDDR |= 0xFE00;
+	for (int i = 9; i <= 15; i++)
+		PORTD->PCR[i] = PORT_PCR_MUX(1);
 
 	/* PORTE */
 	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
@@ -274,6 +277,9 @@ void _port_init()
 	*/
 	PORTE->PCR[testSW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
 	PTE->PDDR &= ~(1 << testSW);
+
+	PORTE->PCR[SYSTEM_STOP] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
+	PTE->PDDR &= ~(1 << SYSTEM_STOP);
 }
 
 void WDOG_disable(void) 
@@ -290,6 +296,7 @@ void PORTE_IRQHandler()
 	// ISF비트 0 초기화
 	PORTE->PCR[EMERGENCY_SW] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
+	PORTE->PCR[SYSTEM_STOP] %= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
 	{
 		reason = testSW;
@@ -300,9 +307,14 @@ void PORTE_IRQHandler()
 		reason = EMERGENCY_SW;
 		set_emergency_mode();
 	}
+	else if ((PORTE->ISFR & (1 << SYSTEM_STOP)) != 0)
+	{
+		system.system_stop = true;
+	}
 	// ISF비트 1 초기화
 	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_ISF_MASK;
 	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
+	PORTE->PCR[SYSTEM_STOP] |= PORT_PCR_ISF_MASK;
 }
 
 void LPIT0_Ch2_IRQHandler()
@@ -317,8 +329,8 @@ void LPIT0_Ch3_IRQHandler()
 	LPIT0->MSR |= LPIT_MSR_TIF3_MASK;
 	if (system.state == EMERGENCY)
 	{
-		led_toggle_all();
-		buzzer_toggle();
+//		led_toggle_all();
+//		buzzer_toggle();
 	}
 }
 
@@ -345,6 +357,10 @@ void nvic_init()
 	S32_NVIC->ICPR[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->ISER[LPIT0_Ch2_IRQn / 32] |= 1 << (LPIT0_Ch2_IRQn % 32);
 	S32_NVIC->IP[LPIT0_Ch2_IRQn] = 0xB;
+
+	S32_NVIC->ICPR[LPIT0_Ch3_IRQn / 32] |= 1 << (LPIT0_Ch3_IRQn % 32);
+	S32_NVIC->ISER[LPIT0_Ch3_IRQn / 32] |= 1 << (LPIT0_Ch3_IRQn % 32);
+	S32_NVIC->IP[LPIT0_Ch3_IRQn] = 0xB;
 
 	// // LPUART IRQ
 	// S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);

@@ -1,4 +1,5 @@
 // #include "S32K144.h"
+// TODO: Emergency에 쓰이는 토글 검증
 #include "device_registers.h"
 
 #define LED_PTN PTE

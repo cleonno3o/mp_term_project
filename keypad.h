@@ -1,4 +1,5 @@
-#include "S32K144.h"
+// #include "S32K144.h"
+#include "device_registers.h"
 #include "lpit.h"
 #define KEYPAD_PTN PTB
 #define COL_1 12
@@ -28,7 +29,7 @@ char KeyScan(void)
     KEYPAD_PTN->PCOR |= 1 << COL_1;
 
     KEYPAD_PTN->PSOR |= 1 << COL_2;
-    delay_us(Dtime);
+    delay_100ns(Dtime);
     if (KEYPAD_PTN->PDIR & (1 << ROW_1))
         Kbuff = '2';
     if (KEYPAD_PTN->PDIR & (1 << ROW_2))
@@ -40,7 +41,7 @@ char KeyScan(void)
     KEYPAD_PTN->PCOR |= 1 << COL_2;
 
     KEYPAD_PTN->PSOR |= 1 << COL_3;
-    delay_us(Dtime);
+    delay_100ns(Dtime);
     if (KEYPAD_PTN->PDIR & (1 << ROW_1))
         Kbuff = '3';
     if (KEYPAD_PTN->PDIR & (1 << ROW_2))

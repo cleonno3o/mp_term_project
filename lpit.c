@@ -1,5 +1,5 @@
 #include "device_registers.h"
-#include "S32K144.h"
+// #include "S32K144.h"
 #include <stdint.h>
 #include "lpit.h"
 
@@ -22,7 +22,7 @@ void LPIT0_init(uint32_t delay)
     LPIT0->MCR |= LPIT_MCR_M_CEN_MASK; /* DBG_EN-0: Timer chans stop in Debug mode */
 
     // Ch 0: delayms, Ch 1: lcd timer, Ch2: 1sec interrupt, Ch3: 0.5 sec intterrupt
-    LPIT0->MIER = 0x07;
+    LPIT0->MIER = 0x0C;
     timeout = delay * 40000;
     LPIT0->TMR[0].TVAL = timeout;
     LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;

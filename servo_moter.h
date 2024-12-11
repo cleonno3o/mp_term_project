@@ -2,11 +2,14 @@
 #include "device_registers.h"
 #include "lpit.h"
 #define SERVO_PTN PTA
-#define SERVO_CAR 12
+// TODO: 12로 고쳐보기 -> PTN, FTM, PCC, CONTROLS 번호 모두 변경적용
+// TODO: 최적 DELAY 확인
+#define SERVO_CAR 17
 #define SERVO_SHIP 13
+#define SERVO_DELAY 1000
 
-#define FTM_SERVO FTM1
-#define FTM_SERVO_PCC_INDEX PCC_FTM1_INDEX
+#define FTM_SERVO FTM0
+#define FTM_SERVO_PCC_INDEX PCC_FTM0_INDEX
 #define FTM_SERVO_CAR_CH 6
 #define FTM_SERVO_SHIP_CH 7
 
@@ -19,6 +22,7 @@ void servo_set_angle(int angle, int servo_no) {
     else
         FTM_SERVO->CONTROLS[FTM_SERVO_SHIP_CH].CnV = pwm_value;
     FTM_SERVO->SC |= FTM_SC_CLKS(3);
+    delay_ms(SERVO_DELAY);
 }
 
 void servo_car_mode()
@@ -47,5 +51,4 @@ void ftm_servo_init(void) {
 
     // 8로 분주, PWM1활성화
     FTM_SERVO->SC |= FTM_SC_PS(3) | FTM_SC_PWMEN6_MASK | FTM_SC_PWMEN7_MASK;
-    //FTM_SERVO->SC |= FTM_SC_CLKS(3);
 }

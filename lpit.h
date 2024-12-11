@@ -1,5 +1,6 @@
 #ifndef LPIT0_H_
 #define LPIT0_H_
+#include <stdint.h>
 void lpit_init(uint32_t delay);
 void LPIT0_init(uint32_t delay);
 void delay_ms(volatile int ms);

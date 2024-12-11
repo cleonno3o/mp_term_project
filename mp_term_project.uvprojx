@@ -435,14 +435,24 @@
               <FilePath>.\led.h</FilePath>
             </File>
             <File>
-              <FileName>lpit0.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\lpit0.h</FilePath>
-            </File>
-            <File>
               <FileName>LPUART.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\LPUART.h</FilePath>
+            </File>
+            <File>
+              <FileName>keypad.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\keypad.h</FilePath>
+            </File>
+            <File>
+              <FileName>lpit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lpit.c</FilePath>
+            </File>
+            <File>
+              <FileName>lpit.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\lpit.h</FilePath>
             </File>
           </Files>
         </Group>
