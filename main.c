@@ -7,7 +7,7 @@
 #include "step_moter.h"
 //#include "lcd.h"
 #include "led.h"
-//#include "servo_moter.h"
+#include "servo_moter.h"
 #include "lpit.h"
 //#include "keypad.h"
 //#include "LPUART.h"
@@ -127,6 +127,10 @@ void set_emergency_mode()
 {
 	system.state = EMERGENCY;
 	system.emergency_timer = system.EMERGENCY_TIMER_TH;
+	// step_clear();
+	// servo_car_mode();
+	// step_close(system.STEP_DELAY);
+
 	// TODO: lcd
 	// TODO: led
 	// TODO: buzzer
@@ -365,5 +369,5 @@ void nvic_init()
 	// // LPUART IRQ
 	// S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
 	// S32_NVIC->ISER[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
-	// S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0x1;
+	// S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0xB;
 }

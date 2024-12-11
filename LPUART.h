@@ -7,7 +7,7 @@
  */
 
 //#include "S32K144.h" /* include peripheral declarations S32K144 */
-// #include "S32K144.h"
+#include "S32K144.h"
 #include "device_registers.h"
 
 
@@ -20,6 +20,8 @@ void LPUART1_init(void)  /* Init. summary: 9600 baud, 1 stop bit, 8 bit format, 
     LPUART1->BAUD = 0x0F000034;  /* Initialize for 9600 baud, 1 stop: */
 
     LPUART1->CTRL=0x000C0000;    /* Enable transmitter & receiver, no parity, 8 bit char: */
+    // IRQ
+    LPUART1->CTRL |= LPUART_CTRL_RIE_MASK | LPUART_CTRL_TIE_MASK;
 }
 
 void LPUART1_transmit_char(char send) {    /* Function to Transmit single Char */
