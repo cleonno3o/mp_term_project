@@ -1,7 +1,16 @@
 // #include "S32K144.h"
 #include "device_registers.h"
 #include "lpit.h"
-#define SEGMENT_PTN PTC
+#include "port.h"
+
+void segment_init()
+{
+    for (int i = 1; i <= 11; i++)
+    {
+        SEGMENT_PORTN->PCR[i] = PORT_PCR_MUX(1);
+        SEGMENT_PTN->PDDR |= 1 << i;
+    }
+}
 
 void set_num (int num, int pos)
 {

@@ -1,15 +1,25 @@
 // #include "S32K144.h"
 #include "device_registers.h"
 #include "lpit.h"
-#define KEYPAD_PTN PTB
-#define COL_1 12
-#define COL_2 14
-#define COL_3 15
-#define ROW_1 0
-#define ROW_2 1
-#define ROW_3 2
-#define ROW_4 3
+#include "port.h"
 #define KEYPAD_NONE '^'
+
+void keypad_init()
+{
+    KEYPAD_PORTN->PCR[ROW_1] = PORT_PCR_MUX(1);
+    KEYPAD_PORTN->PCR[ROW_2] = PORT_PCR_MUX(1);
+    KEYPAD_PORTN->PCR[ROW_3] = PORT_PCR_MUX(1);
+    KEYPAD_PORTN->PCR[ROW_4] = PORT_PCR_MUX(1);
+    KEYPAD_PORTN->PCR[COL_1] = PORT_PCR_MUX(1);
+    KEYPAD_PORTN->PCR[COL_2] = PORT_PCR_MUX(1);
+    KEYPAD_PORTN->PCR[COL_3] = PORT_PCR_MUX(1);
+
+    KEYPAD_PTN->PDDR |= 1 << COL_1 | 1 << COL_2 | 1 << COL_3;
+    KEYPAD_PTN->PDDR &= ~(1 << ROW_1);
+    KEYPAD_PTN->PDDR &= ~(1 << ROW_2);
+    KEYPAD_PTN->PDDR &= ~(1 << ROW_3);
+    KEYPAD_PTN->PDDR &= ~(1 << ROW_4);
+}
 
 char KeyScan(void)
 {

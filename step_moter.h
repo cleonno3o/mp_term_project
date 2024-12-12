@@ -1,12 +1,7 @@
 #include "device_registers.h"
 // #include "S32K144.h"
 #include "lpit.h"
-
-#define STEP_PTN PTA
-#define STEP_IN_1 3
-#define STEP_IN_2 4
-#define STEP_IN_3 5
-#define STEP_IN_4 6
+#include "port.h"
 
 #define STEP_MAX 128
 
@@ -15,6 +10,16 @@ extern int STEP_LAST = 0;
 STEP_LAST 부터 시작해서 target까지 움직이는 거로 
 이러면 각도를 정하는게 아니라 끝을 그냥 0 ~ 180도가 맞는듯
 */
+
+void step_init()
+{
+    STEP_PORTN->PCR[STEP_IN_1] = PORT_PCR_MUX(1);
+    STEP_PORTN->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
+    STEP_PORTN->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
+    STEP_PORTN->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
+
+    STEP_PTN->PDDR |= 1 << STEP_IN_1 | 1 << STEP_IN_2 | 1 << STEP_IN_3 | 1 << STEP_IN_4;
+}
 
 void step_clear()
 {

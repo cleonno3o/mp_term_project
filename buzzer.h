@@ -1,8 +1,12 @@
 // #include "S32K144.h"
 #include "device_registers.h"
+#include "port.h"
 
-#define BUZZER 1
-#define BUZZER_PTN PTE
+void buzzer_init()
+{
+    BUZZER_PORTN->PCR[BUZZER] = PORT_PCR_MUX(1);
+    BUZZER_PTN->PDDR |= 1 << BUZZER;
+}
 
 void buzzer_set(bool on)
 {

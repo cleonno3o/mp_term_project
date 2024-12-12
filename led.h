@@ -1,13 +1,20 @@
 // #include "S32K144.h"
 // TODO: Emergency에 쓰이는 토글 검증
 #include "device_registers.h"
+#include "port.h"
 
-#define LED_PTN PTE
-#define LED_SYSTEM_GREEN 2
-#define LED_CAR_GREEN 3
-#define LED_CAR_RED 4
-#define LED_SHIP_GREEN 5
-#define LED_SHIP_RED 6
+void led_init()
+{
+    LED_PORTN->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
+    LED_PORTN->PCR[LED_CAR_GREEN] = PORT_PCR_MUX(1);
+    LED_PORTN->PCR[LED_CAR_RED] = PORT_PCR_MUX(1);
+    LED_PORTN->PCR[LED_SHIP_GREEN] = PORT_PCR_MUX(1);
+    LED_PORTN->PCR[LED_SHIP_RED] = PORT_PCR_MUX(1);
+
+    LED_PTN->PDDR |= 1 << LED_SYSTEM_GREEN |
+                     1 << LED_CAR_GREEN | 1 << LED_CAR_RED |
+                     1 << LED_SHIP_GREEN | 1 << LED_SHIP_RED;
+}
 
 void led_set_system_green(bool on)
 {

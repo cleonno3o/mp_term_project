@@ -1,7 +1,8 @@
 #include "device_registers.h"
 #include "clocks_and_modes.h"
-//#include "S32K144.h"
+#include "S32K144.h"
 // librarys
+#include "port.h"
 #include "segment.h"
 #include "buzzer.h"
 #include "step_moter.h"
@@ -11,12 +12,6 @@
 #include "lpit.h"
 //#include "keypad.h"
 //#include "LPUART.h"
-
-#define EMERGENCY_SW 7
-
-// test
-int testSW = 8;
-int SYSTEM_STOP = 9;
 
 enum STATE
 {
@@ -219,58 +214,23 @@ void init_sys()
 
 void _port_init()
 {
-    /* PORTA */
 	PCC->PCCn[PCC_PORTA_INDEX] = PCC_PCCn_CGC_MASK;
-	// 서보모터
-	PORTA->PCR[SERVO_CAR] = PORT_PCR_MUX(2);
-	PORTA->PCR[SERVO_SHIP] = PORT_PCR_MUX(2);
-	// 스텝 모터
-	PORTA->PCR[STEP_IN_1] = PORT_PCR_MUX(1);
-	PORTA->PCR[STEP_IN_2] = PORT_PCR_MUX(1);
-	PORTA->PCR[STEP_IN_3] = PORT_PCR_MUX(1);
-	PORTA->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
-
-	/* PORTB */
 	PCC->PCCn[PCC_PORTB_INDEX] = PCC_PCCn_CGC_MASK;
-	// KeyPad
-	
-    /* PORTC */
-	// 7-Segment
-	PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;
-	for (int i = 1; i <= 11; i++)
-	{
-		PORTC->PCR[i] = PORT_PCR_MUX(1);
-		PTC->PDDR |= 1 << i;
-	}
+	PCC->PCCn[PCC_PORTC_INDEX] = PCC_PCCn_CGC_MASK;
+	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
 
-	/* PORTD */
-	// LCD: 9 ~ 15
 	PCC->PCCn[PCC_PORTD_INDEX] &= ~PCC_PCCn_CGC_MASK;
 	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
 	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
 
+	servo_init();
+	step_init();
+	segment_init();
 	PCC->PCCn[PCC_FTM2_INDEX] &= ~PCC_PCCn_CGC_MASK;
 	PCC->PCCn[PCC_FTM2_INDEX] |= (PCC_PCCn_PCS(1) | PCC_PCCn_CGC_MASK); // Clock = 80MHz
 
-	PTD->PDDR |= 0xFE00;
-	for (int i = 9; i <= 15; i++)
-		PORTD->PCR[i] = PORT_PCR_MUX(1);
-
-	/* PORTE */
-	PCC->PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;
-    // 부저: 1
-	PORTE->PCR[BUZZER] = PORT_PCR_MUX(1);
-	PTE->PDDR |= 1 << BUZZER;
-	// LED: 2 ~ 6
-	PORTE->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
-	PORTE->PCR[LED_CAR_GREEN] = PORT_PCR_MUX(1);
-	PORTE->PCR[LED_CAR_RED] = PORT_PCR_MUX(1);
-	PORTE->PCR[LED_SHIP_GREEN] = PORT_PCR_MUX(1);
-	PORTE->PCR[LED_SHIP_RED] = PORT_PCR_MUX(1);
-
-	PTE->PDDR |= 1 << LED_SYSTEM_GREEN | 
-				1 << LED_CAR_GREEN | 1 << LED_CAR_RED | 
-				1 << LED_SHIP_GREEN | 1 << LED_SHIP_RED;
+	buzzer_init();
+	led_init();
     // 119: 7
 	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
 	PTE->PDDR &= ~(1 << EMERGENCY_SW);

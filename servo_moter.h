@@ -1,17 +1,14 @@
 // #include "S32K144.h"
 #include "device_registers.h"
 #include "lpit.h"
-#define SERVO_PTN PTA
-// TODO: 12로 고쳐보기 -> PTN, FTM, PCC, CONTROLS 번호 모두 변경적용
-// TODO: 최적 DELAY 확인
-#define SERVO_CAR 17
-#define SERVO_SHIP 13
+#include "port.h"
 #define SERVO_DELAY 1000
 
-#define FTM_SERVO FTM0
-#define FTM_SERVO_PCC_INDEX PCC_FTM0_INDEX
-#define FTM_SERVO_CAR_CH 6
-#define FTM_SERVO_SHIP_CH 7
+void servo_init()
+{
+    SERVO_PORTN->PCR[SERVO_CAR] = PORT_PCR_MUX(2);
+    SERVO_PORTN->PCR[SERVO_SHIP] = PORT_PCR_MUX(2);
+}
 
 // 서보 모터의 듀티 사이클 계산 함수
 void servo_set_angle(int angle, int servo_no) {

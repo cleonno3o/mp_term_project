@@ -11,7 +11,14 @@
 void lcdEN();
 void lcdNEN();
 void lcdinput(uint16_t);
-void lcdinit();
+void lcd_setting();
+
+void lcd_init()
+{
+    PTD->PDDR |= 0xFE00;
+    for (int i = 9; i <= 15; i++)
+        PORTD->PCR[i] = PORT_PCR_MUX(1);
+}
 
 void lcdEN(void)
 {
@@ -23,7 +30,7 @@ void lcdNEN(void)
     PTD->PCOR |= 1 << (BASE + EN);
 }
 
-void lcdinit(void)
+void lcd_setting(void)
 {
 
     lcdinput(0x28); // lcd function set #1

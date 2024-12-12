@@ -6,6 +6,7 @@
         "segment.h": "c",
         "step_moter.h": "c",
         "servo_moter.h": "c",
-        "s32k144.h": "c"
+        "s32k144.h": "c",
+        "port.h": "c"
     }
 }
