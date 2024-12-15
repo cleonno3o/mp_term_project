@@ -19,6 +19,9 @@
 #define LED_PTN PTE
 #define LED_PORTN PORTE
 
+#define COMMON_PTN PTE
+#define COMMON_PORTN PORTE
+
 // A
 // TODO: 12로 고쳐보기 -> PTN, FTM, PCC, CONTROLS 번호 모두 변경적용
 // TODO: 최적 DELAY 확인
@@ -50,7 +53,7 @@
 #define LED_SHIP_GREEN 5
 #define LED_SHIP_RED 6
 
-#define EMERGENCY_SW 7
+#define COMMON_EMERGENCY 7
 
 //// test
 #define testSW 8
