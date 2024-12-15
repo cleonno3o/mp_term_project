@@ -3,6 +3,12 @@
 #include "device_registers.h"
 #include "port.h"
 
+void led_set_system_green(bool on);
+void led_set_car_green(bool on);
+void led_set_car_red(bool on);
+void led_ship_car_green(bool on);
+void led_ship_car_red(bool on);
+
 void led_init()
 {
     LED_PORTN->PCR[LED_SYSTEM_GREEN] = PORT_PCR_MUX(1);
@@ -14,6 +20,11 @@ void led_init()
     LED_PTN->PDDR |= 1 << LED_SYSTEM_GREEN |
                      1 << LED_CAR_GREEN | 1 << LED_CAR_RED |
                      1 << LED_SHIP_GREEN | 1 << LED_SHIP_RED;
+
+    led_set_car_green(false);
+    led_set_car_red(false);
+    led_set_ship_green(false);
+    led_set_ship_red(false);
 }
 
 void led_set_system_green(bool on)
