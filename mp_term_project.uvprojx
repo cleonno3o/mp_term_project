@@ -454,6 +454,11 @@
               <FileType>5</FileType>
               <FilePath>.\lpit.h</FilePath>
             </File>
+            <File>
+              <FileName>port.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\port.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

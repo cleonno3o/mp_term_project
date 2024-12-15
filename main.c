@@ -1,6 +1,6 @@
 #include "device_registers.h"
 #include "clocks_and_modes.h"
-#include "S32K144.h"
+//#include "S32K144.h"
 // librarys
 #include "port.h"
 #include "segment.h"
@@ -11,8 +11,8 @@
 #include "servo_moter.h"
 #include "lpit.h"
 //#include "keypad.h"
-//#include "LPUART.h"
-
+#include "LPUART.h"
+bool prev_car = true;
 enum STATE
 {
     INIT = 0,
@@ -59,7 +59,7 @@ System system = {
 	.system_stop = false,
 
 	.SHIP_TIMER_TH = 10,
-	.EMERGENCY_TIMER_TH = 3,
+	.EMERGENCY_TIMER_TH = 5,
 	.STEP_DELAY = 2
 };
 
@@ -82,15 +82,15 @@ void set_emergency_mode();
 int main(void) 
 {
 	init_sys();
-    led_set_car_green(true);
-    led_set_car_red(true);
-    led_set_ship_green(true);
-    led_set_ship_red(true);
+    led_set_car_green(false);
+    led_set_car_red(false);
+    led_set_ship_green(false);
+    led_set_ship_red(false);
     show_system_ready();
 	set_car_mode();
 	while (1)
 	{
-		if (system.system_stop) return 0;
+		//if (system.system_stop) return 0;
 		switch (system.state)
 		{
 			case CAR:
@@ -122,10 +122,10 @@ void set_emergency_mode()
 {
 	system.state = EMERGENCY;
 	system.emergency_timer = system.EMERGENCY_TIMER_TH;
-	// step_clear();
-	// servo_car_mode();
-	// step_close(system.STEP_DELAY);
-
+	step_clear();
+	servo_car_mode();
+	step_close(system.STEP_DELAY);
+    
 	// TODO: lcd
 	// TODO: led
 	// TODO: buzzer
@@ -138,7 +138,7 @@ void set_car_mode()
 	led_car_mode();
 	if (prev_state != EMERGENCY)
 		step_close(system.STEP_DELAY);
-//	servo_car_mode();
+	servo_car_mode();
 }
 
 void set_ship_mode()
@@ -148,7 +148,7 @@ void set_ship_mode()
 	led_ship_mode();
     buzzer_set(false);
 	step_open(system.STEP_DELAY);
-//	servo_ship_mode();
+	servo_ship_mode();
 }
 
 void show_system_ready()
@@ -162,7 +162,7 @@ void check_around()
 	if (is_ship_exist())
 	{
 		system.to_raspberry_pi = EXIST;
-		// isRegisterd = check_ship();
+		// system.isRegisterd = check_ship();
 		if (system.isRegisterd)
 		{
 			if (system.state == CAR)
@@ -195,6 +195,17 @@ bool is_ship_exist()
 bool check_ship()
 {
 	return false;
+	// while (system.from_raspberry_pi == BLANK) {}
+	// if (system.from_raspberry_pi == VALID)
+	// {
+	// 	system.from_raspberry_pi = BLANK;
+	// 	return true;
+	// }
+	// else if (system.from_raspberry_pi == INVALID)
+	// {
+	// 	system.from_raspberry_pi = BLANK;
+	// 	return false;
+	// }
 }
 
 void init_sys() 
@@ -260,7 +271,7 @@ void PORTE_IRQHandler()
 	// ISF비트 0 초기화
 	PORTE->PCR[EMERGENCY_SW] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
-	PORTE->PCR[SYSTEM_STOP] %= ~(PORT_PCR_ISF_MASK);
+	PORTE->PCR[SYSTEM_STOP] &= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
 	{
 		reason = testSW;
@@ -293,22 +304,23 @@ void LPIT0_Ch3_IRQHandler()
 	LPIT0->MSR |= LPIT_MSR_TIF3_MASK;
 	if (system.state == EMERGENCY)
 	{
-//		led_toggle_all();
+
+		led_toggle_all();
 //		buzzer_toggle();
 	}
 }
 
-// void LPUART1_RxTx_IRQHandler()
-// {
-// 	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
-//         // 수신 데이터 처리
-//         system.from_raspberry_pi = LPUART1->DATA;
-//     }
-//     if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
-//         // 송신 데이터 처리
-//         LPUART1->DATA = system.to_raspberry_pi;
-//     }
-// }
+void LPUART1_RxTx_IRQHandler()
+{
+	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+        // 수신 데이터 처리
+        system.from_raspberry_pi = LPUART1->DATA;
+    }
+    if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
+        // 송신 데이터 처리
+        LPUART1->DATA = system.to_raspberry_pi;
+    }
+}
 
 void nvic_init()
 {
@@ -326,8 +338,8 @@ void nvic_init()
 	S32_NVIC->ISER[LPIT0_Ch3_IRQn / 32] |= 1 << (LPIT0_Ch3_IRQn % 32);
 	S32_NVIC->IP[LPIT0_Ch3_IRQn] = 0xB;
 
-	// // LPUART IRQ
-	// S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
-	// S32_NVIC->ISER[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
-	// S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0xB;
+	// LPUART IRQ
+	S32_NVIC->ICPR[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
+	S32_NVIC->ISER[LPUART1_RxTx_IRQn / 32] |= 1 << (LPUART1_RxTx_IRQn % 32);
+	S32_NVIC->IP[LPUART1_RxTx_IRQn] = 0xB;
 }

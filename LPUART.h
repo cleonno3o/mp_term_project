@@ -7,7 +7,7 @@
  */
 
 //#include "S32K144.h" /* include peripheral declarations S32K144 */
-#include "S32K144.h"
+//#include "S32K144.h"
 #include "device_registers.h"
 
 

@@ -5,7 +5,7 @@
 
 #define STEP_MAX 128
 
-extern int STEP_LAST = 0;
+int STEP_LAST;
 /* TODO:
 STEP_LAST 부터 시작해서 target까지 움직이는 거로 
 이러면 각도를 정하는게 아니라 끝을 그냥 0 ~ 180도가 맞는듯
@@ -19,6 +19,7 @@ void step_init()
     STEP_PORTN->PCR[STEP_IN_4] = PORT_PCR_MUX(1);
 
     STEP_PTN->PDDR |= 1 << STEP_IN_1 | 1 << STEP_IN_2 | 1 << STEP_IN_3 | 1 << STEP_IN_4;
+    STEP_LAST = 0;
 }
 
 void step_clear()

@@ -10,8 +10,8 @@
 #define KEYPAD_PTN PTB
 #define KEYPAD_PORTN PORTB
 
-#define SEGMENT_PTN PTC
-#define SEGMENT_PORTN PORTC
+#define SEGMENT_PTN PTD
+#define SEGMENT_PORTN PORTD
 
 #define BUZZER_PTN PTE
 #define BUZZER_PORTN PORTE
@@ -22,13 +22,13 @@
 // A
 // TODO: 12로 고쳐보기 -> PTN, FTM, PCC, CONTROLS 번호 모두 변경적용
 // TODO: 최적 DELAY 확인
-#define SERVO_CAR 17
+#define SERVO_CAR 12
 #define SERVO_SHIP 13
 
-#define STEP_IN_1 3
-#define STEP_IN_2 4
-#define STEP_IN_3 5
-#define STEP_IN_4 6
+#define STEP_IN_1 0
+#define STEP_IN_2 1
+#define STEP_IN_3 2
+#define STEP_IN_4 3
 // B
 #define COL_1 12
 #define COL_2 14
@@ -46,7 +46,7 @@
 
 #define LED_SYSTEM_GREEN 2
 #define LED_CAR_GREEN 3
-#define LED_CAR_RED 4
+#define LED_CAR_RED 9
 #define LED_SHIP_GREEN 5
 #define LED_SHIP_RED 6
 
@@ -54,11 +54,11 @@
 
 //// test
 #define testSW 8
-#define SYSTEM_STOP 9
+#define SYSTEM_STOP 10
 
 // FTM
-#define FTM_SERVO FTM0
-#define FTM_SERVO_PCC_INDEX PCC_FTM0_INDEX
+#define FTM_SERVO FTM1
+#define FTM_SERVO_PCC_INDEX PCC_FTM1_INDEX
 #define FTM_SERVO_CAR_CH 6
 #define FTM_SERVO_SHIP_CH 7
 

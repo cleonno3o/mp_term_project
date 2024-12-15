@@ -2,7 +2,7 @@
 #include "device_registers.h"
 #include "lpit.h"
 #include "port.h"
-#define SERVO_DELAY 1000
+#define SERVO_DELAY 1500
 
 void servo_init()
 {
@@ -13,7 +13,7 @@ void servo_init()
 // 서보 모터의 듀티 사이클 계산 함수
 void servo_set_angle(int angle, int servo_no) {
     // 각도에 따른 듀티 사이클 값 계산 (0도 = 1000, 90도 = 2000)
-    int pwm_value = 1000 + ((angle * 1000) / 180);
+    int pwm_value = 400 + ((angle * 2000) / 180);
     if (servo_no == SERVO_CAR)
         FTM_SERVO->CONTROLS[FTM_SERVO_CAR_CH].CnV = pwm_value;
     else
@@ -31,7 +31,7 @@ void servo_car_mode()
 void servo_ship_mode()
 {
     servo_set_angle(0, SERVO_CAR);
-    servo_set_angle(90, SERVO_SHIP);
+    servo_set_angle(120, SERVO_SHIP);
 }
 
 // FTM0 PWM 초기화 함수

@@ -6,4 +6,5 @@
   RTE\Device\S32K144HAxxxLHx\system_S32K144.h \
   C:\Users\sumin\AppData\Local\Arm\Packs\Keil\S32_SDK_DFP\1.5.1\platform\devices\S32K144\include\S32K144_features.h \
   C:\Users\sumin\AppData\Local\Arm\Packs\Keil\S32_SDK_DFP\1.5.1\platform\devices\devassert.h \
-  clocks_and_modes.h segment.h lpit.h buzzer.h step_moter.h led.h
+  clocks_and_modes.h port.h segment.h lpit.h buzzer.h step_moter.h led.h \
+  servo_moter.h LPUART.h
