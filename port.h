@@ -49,15 +49,15 @@
 
 #define LED_SYSTEM_GREEN 2
 #define LED_CAR_GREEN 3
-#define LED_CAR_RED 9
-#define LED_SHIP_GREEN 5
-#define LED_SHIP_RED 6
+#define LED_CAR_RED 5
+#define LED_SHIP_GREEN 6
+#define LED_SHIP_RED 7
 
-#define COMMON_EMERGENCY 7
+#define COMMON_EMERGENCY 8
 
 //// test
-#define testSW 8
-#define SYSTEM_STOP 10
+#define testSW 9
+#define COMMON_EDIT 10
 
 // FTM
 #define FTM_SERVO FTM1

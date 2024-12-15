@@ -3,6 +3,12 @@
 #include "lpit.h"
 #include "port.h"
 #define KEYPAD_NONE '^'
+#define KEYPAD_NONE_MODE -1
+#define KEYPAD_REGISTER_MODE 1
+#define KEYPAD_DELETE_MODE 2
+
+volatile char input;
+volatile int mode;
 
 void keypad_init()
 {
@@ -19,48 +25,79 @@ void keypad_init()
     KEYPAD_PTN->PDDR &= ~(1 << ROW_2);
     KEYPAD_PTN->PDDR &= ~(1 << ROW_3);
     KEYPAD_PTN->PDDR &= ~(1 << ROW_4);
+    input = KEYPAD_NONE;
+    mode = KEYPAD_NONE_MODE;
 }
 
-char KeyScan(void)
+char key_scan(void)
 {
     int Dtime = 10000;
-    char Kbuff = KEYPAD_NONE;
+    char value = KEYPAD_NONE;
 
     KEYPAD_PTN->PSOR |= 1 << COL_1;
     delay_100ns(Dtime);
     if (KEYPAD_PTN->PDIR & (1 << ROW_1))
-        Kbuff = '1'; // 1
+        value = '1'; // 1
     if (KEYPAD_PTN->PDIR & (1 << ROW_2))
-        Kbuff = '2'; // 4
+        value = '2'; // 4
     if (KEYPAD_PTN->PDIR & (1 << ROW_3))
-        Kbuff = '7'; // 7
+        value = '7'; // 7
     if (KEYPAD_PTN->PDIR & (1 << ROW_4))
-        Kbuff = '*'; //*
+        value = '*'; //*
     KEYPAD_PTN->PCOR |= 1 << COL_1;
 
     KEYPAD_PTN->PSOR |= 1 << COL_2;
     delay_100ns(Dtime);
     if (KEYPAD_PTN->PDIR & (1 << ROW_1))
-        Kbuff = '2';
+        value = '2';
     if (KEYPAD_PTN->PDIR & (1 << ROW_2))
-        Kbuff = '5';
+        value = '5';
     if (KEYPAD_PTN->PDIR & (1 << ROW_3))
-        Kbuff = '8';
+        value = '8';
     if (KEYPAD_PTN->PDIR & (1 << ROW_4))
-        Kbuff = '0';
+        value = '0';
     KEYPAD_PTN->PCOR |= 1 << COL_2;
 
     KEYPAD_PTN->PSOR |= 1 << COL_3;
     delay_100ns(Dtime);
     if (KEYPAD_PTN->PDIR & (1 << ROW_1))
-        Kbuff = '3';
+        value = '3';
     if (KEYPAD_PTN->PDIR & (1 << ROW_2))
-        Kbuff = '6';
+        value = '6';
     if (KEYPAD_PTN->PDIR & (1 << ROW_3))
-        Kbuff = '9';
+        value = '9';
     if (KEYPAD_PTN->PDIR & (1 << ROW_4))
-        Kbuff = '#';
+        value = '#';
     KEYPAD_PTN->PCOR |= 1 << COL_3;
 
-    return Kbuff;
+    return value;
+}
+
+int keypad_get_mode()
+{
+    if (mode == KEYPAD_NONE_MODE) 
+    {
+        char tmp = key_scan();
+        if (tmp == '#') mode = KEYPAD_REGISTER_MODE;
+        else if (tmp == '*') mode = KEYPAD_DELETE_MODE;
+        else input = KEYPAD_NONE_MODE;
+    }
+    return mode;
+}
+
+int keypad_get_input()
+{
+    if (input == KEYPAD_NONE) 
+    {
+        char tmp = key_scan();
+        if (tmp >= '0' && tmp <= '9') input = tmp;
+        else input = KEYPAD_NONE;
+    }
+    return input;
+}
+
+void keypad_clear()
+{
+    input = KEYPAD_NONE;
+    mode = KEYPAD_NONE_MODE;
 }

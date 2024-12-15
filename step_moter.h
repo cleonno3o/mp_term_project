@@ -5,7 +5,7 @@
 
 #define STEP_MAX 128
 
-int STEP_LAST;
+volatile int STEP_LAST;
 /* TODO:
 STEP_LAST 부터 시작해서 target까지 움직이는 거로 
 이러면 각도를 정하는게 아니라 끝을 그냥 0 ~ 180도가 맞는듯

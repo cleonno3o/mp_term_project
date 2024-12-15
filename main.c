@@ -11,57 +11,62 @@
 #include "servo_moter.h"
 #include "lpit.h"
 #include "common.h"
-// #include "keypad.h"
+#include "keypad.h"
 #include "LPUART.h"
+#include "set.h"
 bool prev_car = true;
 enum STATE
 {
     INIT = 0,
 	CAR,
     SHIP,
-    EMERGENCY
+    EMERGENCY,
+	EDIT
 };
 
 enum RESULT
 {
-	WAIT = 'W',
-	BLANK = 'B',
 	VALID = 'V',
 	INVALID = 'I'
 };
 
 enum AROUND
 {
+	WAIT = 'W',
 	NOT_EXIST = 'N',
-	EXIST = 'Y'
 };
 
 // system
 typedef struct {
 	//// value
 	int state;
+	int ship_timer, emergency_timer, edit_timer;
 	bool is_registered;
-	int ship_timer, emergency_timer;
+	bool system_stop;
+	bool is_edit_requested;
 	char from_raspberry_pi;
 	char to_raspberry_pi;
-	bool system_stop;
+	Set ship;
 	//// constant
 	const int SHIP_TIMER_TH;
 	const int EMERGENCY_TIMER_TH;
+	const int EDIT_TIMER_TH;
 	const int STEP_DELAY;
 } System;
 
 System system = {
 	.state = INIT,
-	.is_registered = false,
 	.ship_timer = 0, 
 	.emergency_timer = 0,
-	.from_raspberry_pi = WAIT,
-	.to_raspberry_pi = NOT_EXIST,
+	.edit_timer = 0,
+	.is_registered = false,
 	.system_stop = false,
-
+	.is_edit_requested = false,
+	.from_raspberry_pi = WAIT,
+	
 	.SHIP_TIMER_TH = 10,
 	.EMERGENCY_TIMER_TH = 5,
+	.EDIT_TIMER_TH = 5,
 	.STEP_DELAY = 2
 };
 
@@ -71,11 +76,15 @@ void _port_init();
 void nvic_init();
 void show_system_ready();
 void check_around();
-// bool is_ship_exist();
-// bool check_status();
+bool check_ship();
+void handle_edit();
+
 void set_ship_mode();
 void set_car_mode();
 void set_emergency_mode();
+void set_edit_mode();
+
+void end_edit_mode();
 
 int main(void) 
 {
@@ -87,28 +96,55 @@ int main(void)
 		switch (system.state)
 		{
 			case CAR:
-				check_around();
-				break;
+				if (system.is_edit_requested)
+				{
+					set_edit_mode();
+					break;
+				}
+				else
+				{
+					check_around();
+					break;
+				}
 			case SHIP:
 				check_around();
-				print_4_digit(system.ship_timer);
+				print_digit(system.ship_timer);
 				if (system.ship_timer == 0)
 				{
 					set_car_mode();
 				}
 				break;
 			case EMERGENCY:
-				print_4_digit(system.emergency_timer);
+				print_digit(system.emergency_timer);
 				if (system.emergency_timer == 0)
 				{
 					set_car_mode();
 				}
 				break;
-			default:
+			case EDIT:
+				handle_edit();
+				if (system.edit_timer == 0)
+				{
+					end_edit_mode();
+					set_car_mode();
+				}
 				break;
 		}
 	}
 	return 0;
+}
+
+void end_edit_mode()
+{
+	system.is_edit_requested = false;
+	keypad_clear();
+	set_car_mode();
+}
+
+void set_edit_mode()
+{
+	system.state = EDIT;
+	system.edit_timer = system.EDIT_TIMER_TH;
 }
 
 void set_emergency_mode()
@@ -153,21 +189,50 @@ void check_around()
 	{
 		case WAIT:
 			while (system.from_raspberry_pi == WAIT) {}
-		case BLANK:
+		case NOT_EXIST:
 			buzzer_set(false);
 			break;
-		case VALID:
-			if (system.state == CAR)
-				set_ship_mode();
-			else if (system.state == SHIP)
-				system.ship_timer = system.SHIP_TIMER_TH;
-			break;
-		case INVALID:
-			if (system.state == CAR)
-				buzzer_set(true);
+		default:
+			if (check_ship())
+			{
+				if (system.state == CAR) set_ship_mode();
+				else if (system.state == SHIP) system.ship_timer = system.SHIP_TIMER_TH;
+			}
+			else
+			{
+				if (system.state == CAR) buzzer_set(true);
+			}
 			break;
 	}
 	system.from_raspberry_pi = WAIT;
+}
+
+bool check_ship()
+{
+	return set_contains(&system.ship, system.from_raspberry_pi - '0');
+}
+
+void handle_edit()
+{
+	if (keypad_get_mode() == KEYPAD_NONE_MODE)
+		return;
+	else
+	{
+		if (keypad_get_input() == KEYPAD_NONE)
+			return;
+		else
+		{
+			if (keypad_get_mode == KEYPAD_REGISTER_MODE)
+			{
+				set_add(&system.ship, keypad_get_input() - '0');
+			}
+			else if (keypad_get_mode == KEYPAD_REGISTER_MODE)
+			{
+				set_remove(&system.ship, keypad_get_input() - '0');
+			}
+			end_edit_mode();
+		}
+	}
 }
 
 void init_sys() 
@@ -177,6 +242,7 @@ void init_sys()
 	SPLL_init_160MHz();	   /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
 	NormalRUNmode_80MHz(); /* Initclocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
 	SystemCoreClockUpdate();
+	set_init(&system.ship);
 	delay_ms(20);
 	_port_init();
 	delay_ms(200);
@@ -221,7 +287,7 @@ void PORTE_IRQHandler()
 	// ISF비트 0 초기화
 	PORTE->PCR[COMMON_EMERGENCY] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
-	PORTE->PCR[SYSTEM_STOP] &= ~(PORT_PCR_ISF_MASK);
+	PORTE->PCR[COMMON_EDIT] &= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
 	{
 		reason = testSW;
@@ -232,14 +298,14 @@ void PORTE_IRQHandler()
 		reason = COMMON_EMERGENCY;
 		set_emergency_mode();
 	}
-	else if ((PORTE->ISFR & (1 << SYSTEM_STOP)) != 0)
+	else if ((PORTE->ISFR & (1 << COMMON_EDIT)) != 0)
 	{
-		system.system_stop = true;
+		system.is_edit_requested = true;
 	}
 	// ISF비트 1 초기화
 	PORTE->PCR[COMMON_EMERGENCY] |= PORT_PCR_ISF_MASK;
 	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
-	PORTE->PCR[SYSTEM_STOP] |= PORT_PCR_ISF_MASK;
+	PORTE->PCR[COMMON_EDIT] |= PORT_PCR_ISF_MASK;
 }
 
 void LPIT0_Ch2_IRQHandler()
@@ -247,6 +313,7 @@ void LPIT0_Ch2_IRQHandler()
 	LPIT0->MSR |= LPIT_MSR_TIF2_MASK;
 	if (system.state == SHIP) system.ship_timer--;
 	else if (system.state == EMERGENCY) system.emergency_timer--;
+	else if (system.state == EDIT) system.edit_timer--;
 }
 
 void LPIT0_Ch3_IRQHandler()
@@ -254,7 +321,6 @@ void LPIT0_Ch3_IRQHandler()
 	LPIT0->MSR |= LPIT_MSR_TIF3_MASK;
 	if (system.state == EMERGENCY)
 	{
-
 		led_toggle_all();
 		buzzer_toggle();
 	}

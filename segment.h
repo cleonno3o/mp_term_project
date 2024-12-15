@@ -36,7 +36,7 @@ void set_num (int num, int pos)
     SEGMENT_PTN->PCOR |= 0x1FF; // clear all
 }
 
-void print_4_digit(int num)
+void print_digit(int num)
 {
     for (int i = 1; i <= 2; i++)
     {
