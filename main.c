@@ -10,7 +10,8 @@
 #include "led.h"
 #include "servo_moter.h"
 #include "lpit.h"
-//#include "keypad.h"
+#include "common.h"
+// #include "keypad.h"
 #include "LPUART.h"
 bool prev_car = true;
 enum STATE
@@ -23,6 +24,7 @@ enum STATE
 
 enum RESULT
 {
+	WAIT = 'W',
 	BLANK = 'B',
 	VALID = 'V',
 	INVALID = 'I'
@@ -38,7 +40,7 @@ enum AROUND
 typedef struct {
 	//// value
 	int state;
-	bool isRegisterd;
+	bool is_registered;
 	int ship_timer, emergency_timer;
 	char from_raspberry_pi;
 	char to_raspberry_pi;
@@ -51,10 +53,10 @@ typedef struct {
 
 System system = {
 	.state = INIT,
-	.isRegisterd = false,
+	.is_registered = false,
 	.ship_timer = 0, 
 	.emergency_timer = 0,
-	.from_raspberry_pi = BLANK,
+	.from_raspberry_pi = WAIT,
 	.to_raspberry_pi = NOT_EXIST,
 	.system_stop = false,
 
@@ -69,28 +71,19 @@ void _port_init();
 void nvic_init();
 void show_system_ready();
 void check_around();
-// CAR 
-bool is_ship_exist();
-bool check_ship();
+// bool is_ship_exist();
+// bool check_status();
 void set_ship_mode();
-
-// SHIP
 void set_car_mode();
-
 void set_emergency_mode();
 
 int main(void) 
 {
 	init_sys();
-    led_set_car_green(false);
-    led_set_car_red(false);
-    led_set_ship_green(false);
-    led_set_ship_red(false);
     show_system_ready();
 	set_car_mode();
 	while (1)
 	{
-		//if (system.system_stop) return 0;
 		switch (system.state)
 		{
 			case CAR:
@@ -125,10 +118,7 @@ void set_emergency_mode()
 	step_clear();
 	servo_car_mode();
 	step_close(system.STEP_DELAY);
-    
 	// TODO: lcd
-	// TODO: led
-	// TODO: buzzer
 }
 
 void set_car_mode()
@@ -159,53 +149,25 @@ void show_system_ready()
 
 void check_around()
 {
-	if (is_ship_exist())
+	switch (system.from_raspberry_pi)
 	{
-		system.to_raspberry_pi = EXIST;
-		// system.isRegisterd = check_ship();
-		if (system.isRegisterd)
-		{
+		case WAIT:
+			while (system.from_raspberry_pi == WAIT) {}
+		case BLANK:
+			buzzer_set(false);
+			break;
+		case VALID:
 			if (system.state == CAR)
 				set_ship_mode();
 			else if (system.state == SHIP)
 				system.ship_timer = system.SHIP_TIMER_TH;
-		}
-		else
-		{
+			break;
+		case INVALID:
 			if (system.state == CAR)
-            {
-                buzzer_set(true);
-            }
-
-		}
+				buzzer_set(true);
+			break;
 	}
-	else
-	{
-		system.to_raspberry_pi = NOT_EXIST;
-		buzzer_set(false);
-	}
-}
-
-bool is_ship_exist()
-{
-	// TODO: 배가 지나가고 있거나 앞에있으면 있는 거임
-	return true;
-}
-
-bool check_ship()
-{
-	return false;
-	// while (system.from_raspberry_pi == BLANK) {}
-	// if (system.from_raspberry_pi == VALID)
-	// {
-	// 	system.from_raspberry_pi = BLANK;
-	// 	return true;
-	// }
-	// else if (system.from_raspberry_pi == INVALID)
-	// {
-	// 	system.from_raspberry_pi = BLANK;
-	// 	return false;
-	// }
+	system.from_raspberry_pi = WAIT;
 }
 
 void init_sys() 
@@ -217,9 +179,7 @@ void init_sys()
 	SystemCoreClockUpdate();
 	delay_ms(20);
 	_port_init();
-//	lcdinit();
 	delay_ms(200);
-	ftm_servo_init();
 	nvic_init();
 }
 
@@ -234,6 +194,8 @@ void _port_init()
 	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_PCS(0x001);
 	PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;
 
+	LPUART1_init();
+	ftm_servo_init();
 	servo_init();
 	step_init();
 	segment_init();
@@ -242,19 +204,7 @@ void _port_init()
 
 	buzzer_init();
 	led_init();
-    // 119: 7
-	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
-	PTE->PDDR &= ~(1 << EMERGENCY_SW);
-	
-	// 테스트
-	/*
-	testSW: isRegistered반전 테스트
-	*/
-	PORTE->PCR[testSW] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
-	PTE->PDDR &= ~(1 << testSW);
-
-	PORTE->PCR[SYSTEM_STOP] |= PORT_PCR_MUX(1) | PORT_PCR_IRQC(10);
-	PTE->PDDR &= ~(1 << SYSTEM_STOP);
+//	lcdinit();
 }
 
 void WDOG_disable(void) 
@@ -269,17 +219,17 @@ void PORTE_IRQHandler()
 {
 	int reason = -1;
 	// ISF비트 0 초기화
-	PORTE->PCR[EMERGENCY_SW] &= ~(PORT_PCR_ISF_MASK);
+	PORTE->PCR[COMMON_EMERGENCY] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[testSW] &= ~(PORT_PCR_ISF_MASK);
 	PORTE->PCR[SYSTEM_STOP] &= ~(PORT_PCR_ISF_MASK);
 	if ((PORTE->ISFR & (1 << testSW)) != 0)
 	{
 		reason = testSW;
-		system.isRegisterd = !system.isRegisterd;
+		system.is_registered = !system.is_registered;
 	}
-	else if ((PORTE->ISFR & (1 << EMERGENCY_SW)) != 0)
+	else if ((PORTE->ISFR & (1 << COMMON_EMERGENCY)) != 0)
 	{
-		reason = EMERGENCY_SW;
+		reason = COMMON_EMERGENCY;
 		set_emergency_mode();
 	}
 	else if ((PORTE->ISFR & (1 << SYSTEM_STOP)) != 0)
@@ -287,7 +237,7 @@ void PORTE_IRQHandler()
 		system.system_stop = true;
 	}
 	// ISF비트 1 초기화
-	PORTE->PCR[EMERGENCY_SW] |= PORT_PCR_ISF_MASK;
+	PORTE->PCR[COMMON_EMERGENCY] |= PORT_PCR_ISF_MASK;
 	PORTE->PCR[testSW] |= PORT_PCR_ISF_MASK;
 	PORTE->PCR[SYSTEM_STOP] |= PORT_PCR_ISF_MASK;
 }
@@ -306,7 +256,7 @@ void LPIT0_Ch3_IRQHandler()
 	{
 
 		led_toggle_all();
-//		buzzer_toggle();
+		buzzer_toggle();
 	}
 }
 
