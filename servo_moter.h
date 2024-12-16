@@ -2,7 +2,7 @@
 #include "device_registers.h"
 #include "lpit.h"
 #include "port.h"
-#define SERVO_DELAY 1500
+#define SERVO_DELAY 20
 
 void servo_init()
 {
