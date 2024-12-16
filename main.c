@@ -1,6 +1,7 @@
+//#include "S32K144.h"
+#include <string.h>
 #include "device_registers.h"
 #include "clocks_and_modes.h"
-//#include "S32K144.h"
 // librarys
 #include "port.h"
 #include "segment.h"
@@ -22,12 +23,6 @@ enum STATE
     SHIP,
     EMERGENCY,
 	EDIT
-};
-
-enum RESULT
-{
-	VALID = 'V',
-	INVALID = 'I'
 };
 
 enum AROUND
@@ -74,7 +69,7 @@ System system = {
 void WDOG_disable();
 void init_sys();
 void _port_init();
-void nvic_init();
+void interrupt_init();
 void show_system_ready();
 void check_around();
 bool check_ship();
@@ -84,8 +79,10 @@ void set_ship_mode();
 void set_car_mode();
 void set_emergency_mode();
 void set_edit_mode();
-
 void end_edit_mode();
+
+void send_request();
+void send_system_info();
 
 int main(void) 
 {
@@ -131,6 +128,7 @@ int main(void)
 				}
 				break;
 		}
+		send_system_info();
 	}
 	return 0;
 }
@@ -181,6 +179,34 @@ void set_ship_mode()
 	servo_ship_mode();
 }
 
+void send_system_info()
+{
+	char json_data[256];
+	bool sys = false;
+	bool car = false;
+	bool ship = false;
+	bool emergency = false;
+	bool edit = false;
+	if (system.state != INIT) sys = true;
+	if (system.state == CAR) car = true;
+	else if (system.state == SHIP) ship = true;
+	else if (system.state == EMERGENCY) emergency = true;
+	else if (system.state == EDIT) edit = true;
+    // JSON 문자열 작성
+    sprintf(json_data, "{\"sys\": %s, \"car\": %s, \"ship\": %s, \"emergency\": %s, \"edit\": %s}\r",
+            sys ? "true" : "false",
+            car ? "true" : "false",
+            ship ? "true" : "false",
+			emergency ? "true" : "false",
+			edit ? "true" : "false");
+}
+
+void send_request()
+{
+	LPUART1_transmit_char(BLANK);
+	system.from_raspberry_pi = WAIT;
+}
+
 void show_system_ready()
 {
 	led_set_system_green(true);
@@ -191,9 +217,7 @@ void check_around()
 {
 	if (system.from_raspberry_pi == BLANK)
 	{
-		// LPUART1_transmit_string("give\r");
-	 	LPUART1_transmit_char(BLANK);
-		system.from_raspberry_pi = WAIT;
+		send_request();
 	}
 	if (system.from_raspberry_pi == NOT_EXIST)
 	{
@@ -253,7 +277,7 @@ void init_sys()
 	delay_ms(20);
 	_port_init();
 	delay_ms(200);
-	nvic_init();
+	interrupt_init();
 }
 
 void _port_init()
@@ -347,7 +371,7 @@ void LPUART1_RxTx_IRQHandler()
     // }
 }
 
-void nvic_init()
+void interrupt_init()
 {
 	// PORTE IRQ
 	S32_NVIC->ICPR[PORTE_IRQn / 32] |= 1 << (PORTE_IRQn % 32);
