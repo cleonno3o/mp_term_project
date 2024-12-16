@@ -6,8 +6,8 @@
 void led_set_system_green(bool on);
 void led_set_car_green(bool on);
 void led_set_car_red(bool on);
-void led_ship_car_green(bool on);
-void led_ship_car_red(bool on);
+void led_set_ship_green(bool on);
+void led_set_ship_red(bool on);
 
 void led_init()
 {
