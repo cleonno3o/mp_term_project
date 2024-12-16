@@ -6,7 +6,7 @@
 #include "segment.h"
 #include "buzzer.h"
 #include "step_moter.h"
-//#include "lcd.h"
+// #include "lcd.h"
 #include "led.h"
 #include "servo_moter.h"
 #include "lpit.h"
@@ -32,6 +32,7 @@ enum RESULT
 
 enum AROUND
 {
+	BLANK = 'B',
 	WAIT = 'W',
 	NOT_EXIST = 'N',
 };
@@ -62,9 +63,9 @@ System system = {
 	.is_registered = false,
 	.system_stop = false,
 	.is_edit_requested = false,
-	.from_raspberry_pi = WAIT,
+	.from_raspberry_pi = BLANK,
 	
-	.SHIP_TIMER_TH = 10,
+	.SHIP_TIMER_TH = 5,
 	.EMERGENCY_TIMER_TH = 5,
 	.EDIT_TIMER_TH = 5,
 	.STEP_DELAY = 2
@@ -90,7 +91,7 @@ int main(void)
 {
 	init_sys();
     show_system_ready();
-	set_car_mode();
+    set_car_mode();
 	while (1)
 	{
 		switch (system.state)
@@ -107,12 +108,12 @@ int main(void)
 					break;
 				}
 			case SHIP:
-				check_around();
 				print_digit(system.ship_timer);
 				if (system.ship_timer == 0)
 				{
 					set_car_mode();
 				}
+				check_around();
 				break;
 			case EMERGENCY:
 				print_digit(system.emergency_timer);
@@ -151,6 +152,7 @@ void set_emergency_mode()
 {
 	system.state = EMERGENCY;
 	system.emergency_timer = system.EMERGENCY_TIMER_TH;
+	system.from_raspberry_pi = BLANK;
 	step_clear();
 	servo_car_mode();
 	step_close(system.STEP_DELAY);
@@ -161,6 +163,7 @@ void set_car_mode()
 {
 	int prev_state = system.state;
 	system.state = CAR;
+	system.from_raspberry_pi = BLANK;
 	led_car_mode();
 	if (prev_state != EMERGENCY)
 		step_close(system.STEP_DELAY);
@@ -171,6 +174,7 @@ void set_ship_mode()
 {
 	system.state = SHIP;
 	system.ship_timer = system.SHIP_TIMER_TH;
+	system.from_raspberry_pi = BLANK;
 	led_ship_mode();
     buzzer_set(false);
 	step_open(system.STEP_DELAY);
@@ -185,30 +189,32 @@ void show_system_ready()
 
 void check_around()
 {
-	switch (system.from_raspberry_pi)
+	if (system.from_raspberry_pi == BLANK)
 	{
-		case WAIT:
-			while (system.from_raspberry_pi == WAIT) {}
-		case NOT_EXIST:
-			buzzer_set(false);
-			break;
-		default:
-			if (check_ship())
-			{
-				if (system.state == CAR) set_ship_mode();
-				else if (system.state == SHIP) system.ship_timer = system.SHIP_TIMER_TH;
-			}
-			else
-			{
-				if (system.state == CAR) buzzer_set(true);
-			}
-			break;
+		// LPUART1_transmit_string("give\r");
+	 	LPUART1_transmit_char(BLANK);
+		system.from_raspberry_pi = WAIT;
 	}
-	system.from_raspberry_pi = WAIT;
+	if (system.from_raspberry_pi == NOT_EXIST)
+	{
+		buzzer_set(false);
+	}
 }
 
 bool check_ship()
 {
+	// LPUART1_transmit_string("checking..\n\r");
+	if (set_contains(&system.ship, system.from_raspberry_pi - '0'))
+	{
+		// LPUART1_transmit_string("valid\n\r");
+		if (system.state == CAR) set_ship_mode();
+		else if (system.state == SHIP) system.ship_timer = system.SHIP_TIMER_TH;
+	}
+	else
+	{
+		// LPUART1_transmit_string("invalid\n\r");
+		if (system.state == CAR) buzzer_set(true);
+	}
 	return set_contains(&system.ship, system.from_raspberry_pi - '0');
 }
 
@@ -222,11 +228,11 @@ void handle_edit()
 			return;
 		else
 		{
-			if (keypad_get_mode == KEYPAD_REGISTER_MODE)
+			if (keypad_get_mode() == KEYPAD_REGISTER_MODE)
 			{
 				set_add(&system.ship, keypad_get_input() - '0');
 			}
-			else if (keypad_get_mode == KEYPAD_REGISTER_MODE)
+			else if (keypad_get_mode() == KEYPAD_REGISTER_MODE)
 			{
 				set_remove(&system.ship, keypad_get_input() - '0');
 			}
@@ -243,6 +249,7 @@ void init_sys()
 	NormalRUNmode_80MHz(); /* Initclocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
 	SystemCoreClockUpdate();
 	set_init(&system.ship);
+	set_add(&system.ship, 0);
 	delay_ms(20);
 	_port_init();
 	delay_ms(200);
@@ -331,11 +338,13 @@ void LPUART1_RxTx_IRQHandler()
 	if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
         // 荐脚 单捞磐 贸府
         system.from_raspberry_pi = LPUART1->DATA;
+		check_ship();
+		system.from_raspberry_pi = BLANK;
     }
-    if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
-        // 价脚 单捞磐 贸府
-        LPUART1->DATA = system.to_raspberry_pi;
-    }
+    // if (LPUART1->STAT & LPUART_STAT_TDRE_MASK) {
+    //     // 价脚 单捞磐 贸府
+    //     LPUART1->DATA = system.to_raspberry_pi;
+    // }
 }
 
 void nvic_init()

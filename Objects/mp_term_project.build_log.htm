@@ -22,14 +22,19 @@ Dialog DLL:      TCM.DLL V1.56.4.0
  
 <h2>Project:</h2>
 C:\uVisonProject\mp_term_project\mp_term_project.uvprojx
-Project File Date:  12/13/2024
+Project File Date:  12/16/2024
 
 <h2>Output:</h2>
 *** Using Compiler 'V6.22', folder: 'C:\Users\sumin\AppData\Local\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'Target 1'
+main.c(293): warning: variable 'reason' set but not used [-Wunused-but-set-variable]
+  293 |         int reason = -1;
+      |             ^
+1 warning generated.
+compiling main.c...
 linking...
-Program Size: Code=4412 RO-data=656 RW-data=36 ZI-data=3076  
-".\Objects\mp_term_project.axf" - 0 Error(s), 0 Warning(s).
+Program Size: Code=6168 RO-data=676 RW-data=448 ZI-data=3084  
+".\Objects\mp_term_project.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -58,11 +63,11 @@ Package Vendor: Keil
 
    * Component: Keil::Device:Startup@2.0.0
       Source file:   platform/devices/S32K144/startup/armc/startup_S32K144.S
-      Source file:   platform/devices/S32K144/startup/system_S32K144.c
-      Include file:  platform/devices/S32K144/startup/system_S32K144.h
       Source file:   platform/devices/startup.c
       Include file:  platform/devices/device_registers.h
-Build Time Elapsed:  00:00:00
+      Source file:   platform/devices/S32K144/startup/system_S32K144.c
+      Include file:  platform/devices/S32K144/startup/system_S32K144.h
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>

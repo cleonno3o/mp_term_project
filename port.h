@@ -41,7 +41,10 @@
 #define ROW_3 2
 #define ROW_4 3
 // C
-
+#define LPUART1_PTN PTC
+#define LPUART1_PORTN PORTC
+#define LPUART1_RX_1 8
+#define LPUART1_TX_1 9
 // D
 
 // E
@@ -49,7 +52,7 @@
 
 #define LED_SYSTEM_GREEN 2
 #define LED_CAR_GREEN 3
-#define LED_CAR_RED 5
+#define LED_CAR_RED 4
 #define LED_SHIP_GREEN 6
 #define LED_SHIP_RED 7
 

@@ -2,6 +2,7 @@
 ".\objects\main.o"
 ".\objects\clocks_and_modes.o"
 ".\objects\lpit.o"
+".\objects\set.o"
 ".\objects\startup.o"
 ".\objects\startup_s32k144.o"
 ".\objects\system_s32k144.o"

@@ -7,12 +7,15 @@
  */
 
 //#include "S32K144.h" /* include peripheral declarations S32K144 */
-//#include "S32K144.h"
+// #include "S32K144.h"
 #include "device_registers.h"
-
+#include "port.h"
 
 void LPUART1_init(void)  /* Init. summary: 9600 baud, 1 stop bit, 8 bit format, no parity */
 {
+    LPUART1_PORTN->PCR[LPUART1_RX_1] = PORT_PCR_MUX(2);
+    LPUART1_PORTN->PCR[LPUART1_TX_1] = PORT_PCR_MUX(2);
+
     PCC->PCCn[PCC_LPUART1_INDEX] &= ~PCC_PCCn_CGC_MASK;    /* Ensure clk disabled for config */
     PCC->PCCn[PCC_LPUART1_INDEX] |= PCC_PCCn_PCS(0x001)    /* Clock Src= 1 (SOSCDIV2_CLK) */
                                |  PCC_PCCn_CGC_MASK;     /* Enable clock for LPUART1 regs */
@@ -21,7 +24,7 @@ void LPUART1_init(void)  /* Init. summary: 9600 baud, 1 stop bit, 8 bit format, 
 
     LPUART1->CTRL=0x000C0000;    /* Enable transmitter & receiver, no parity, 8 bit char: */
     // IRQ
-    LPUART1->CTRL |= LPUART_CTRL_RIE_MASK | LPUART_CTRL_TIE_MASK;
+    LPUART1->CTRL |= LPUART_CTRL_RIE_MASK;
 }
 
 void LPUART1_transmit_char(char send) {    /* Function to Transmit single Char */
